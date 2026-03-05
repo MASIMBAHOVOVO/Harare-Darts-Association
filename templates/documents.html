@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Documents & Rules{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-file-alt"></i> Documents & Rules</h1>
+        <p class="page-subtitle">Additional Rules and AGM minutes</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <!-- Rulebook Section -->
+        {% if categories.rulebook %}
+        <div class="doc-category">
+            <h2 class="sub-title"><i class="fas fa-book"></i> Rulebook & Regulations</h2>
+            <div class="docs-grid">
+                {% for doc in categories.rulebook %}
+                <a href="{{ doc.file_url }}" target="_blank" class="doc-card">
+                    <div class="doc-icon rulebook"><i class="fas fa-book"></i></div>
+                    <div class="doc-info">
+                        <h4>{{ doc.title }}</h4>
+                        {% if doc.description %}<p>{{ doc.description }}</p>{% endif %}
+                    </div>
+                    <span class="doc-date">{{ doc.uploaded_at.strftime('%d %b %Y') }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Additional Rules 2026 Section -->
+        <div class="doc-category">
+            <h2 class="sub-title"><i class="fas fa-gavel"></i> Additional Rules 2026</h2>
+            <div class="rules-container">
+                <ol class="rules-list">
+                    <li>Undue noise, offensive language and gestures, and any other form of unsportsmanlike behavior is
+                        not allowed.</li>
+                    <li>Team Captains can only assist players before they take up their stance at the Oche. Coaching
+                        players who are at the Oche is <strong>not permitted</strong> under any circumstances.</li>
+                    <li>The Scorer/Chalker must not tell a player what he/she is left with. He/She (scorer) can only
+                        tell the player what the dart score is, and what is on the board - not colour(s).</li>
+                    <li><strong>THROW:</strong> The Captains, prior to commencement, shall warn teams concerned that
+                        &lsquo;no score&rsquo; shall be declared if a player treads <strong>on or over</strong> the
+                        Oche. Chalkers/Scorers must take note of a player's stance.</li>
+                    <li>A player cannot step or walk over the Oche before completing his/her throw of three darts.
+                        However, a player will be allowed to pick up a dart even if it drops ahead of the oche before
+                        throwing.</li>
+                    <li>No drinking of alcoholic/soft drinks on the playing area; players must use reserved team areas
+                        for such purposes.</li>
+                    <li>Chalkers/Scorers to ensure both players are ready for the game so as not to stop the game midway
+                        for refreshments or use of the toilet.</li>
+                    <li>Postponement of games must be done with the H.D.A Fixture Secretary's consent. Any postponed
+                        match must be played within 7 days from the date of postponement, failure of which disciplinary
+                        action will be instituted.</li>
+                    <li>All scorecards must be scanned and sent to the H.D.A for processing.</li>
+                    <li>No compromises on darts rules.</li>
+                    <li>These rules and regulations are just a reminder; for a full explanation, please use the rule
+                        book.</li>
+                    <li>A clear photo of a scanned scoresheet must be sent soon after the game by both captains.
+                        <div class="rule-note">
+                            <i class="fas fa-info-circle"></i> <strong>NB:</strong> Those with iPhones or high-quality
+                            cameras, kindly use them for easy transparency.
+                        </div>
+                    </li>
+                    <li>Formal wear is required for uniform: formal trousers, skirts, and a collared shirt. Without this
+                        attire, no playing is allowed unless proper communication is made in due time between captains.
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+
+        <!-- AGM Minutes Section -->
+        {% if categories.agm %}
+        <div class="doc-category">
+            <h2 class="sub-title"><i class="fas fa-clipboard-list"></i> AGM Minutes</h2>
+            <div class="docs-grid">
+                {% for doc in categories.agm %}
+                {% if doc.content %}
+                <a href="{{ url_for('main.view_minute', doc_id=doc.id) }}" class="doc-card">
+                    {% else %}
+                    <a href="{{ doc.file_url }}" target="_blank" class="doc-card">
+                        {% endif %}
+                        <div class="doc-icon agm"><i class="fas fa-clipboard-list"></i></div>
+                        <div class="doc-info">
+                            <h4>{{ doc.title }}</h4>
+                            {% if doc.description %}<p>{{ doc.description }}</p>{% endif %}
+                            {% if doc.content %}
+                            <span class="read-more">Read Minutes <i class="fas fa-arrow-right"></i></span>
+                            {% endif %}
+                        </div>
+                        <span class="doc-date">{{ doc.uploaded_at.strftime('%d %b %Y') }}</span>
+                    </a>
+                    {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

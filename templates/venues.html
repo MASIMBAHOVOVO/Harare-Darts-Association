@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Venues{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-map-marker-alt"></i> Venue Directory</h1>
+        <p class="page-subtitle">Teams and their playing venues</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% if teams %}
+        <div class="table-wrapper">
+            <table class="data-table venues-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Team Name</th>
+                        <th>Location</th>
+                        <th>Captain</th>
+                        <th>Phone Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team in teams %}
+                    <tr>
+                        <td class="text-muted">{{ loop.index }}</td>
+                        <td><strong>{{ team.name }}</strong></td>
+                        <td>{{ team.venue_name or '—' }}</td>
+                        <td>{{ team.captain_name or '—' }}</td>
+                        <td>{{ team.phone_number or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-map-marker-alt fa-3x"></i>
+            <p>No venue information available yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

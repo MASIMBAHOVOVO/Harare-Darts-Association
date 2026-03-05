@@ -1,0 +1,12 @@
+﻿--- Database Diagnostics ---
+
+1. Checking PlayerGameWeekStats with highest_checkout > 0:
+No records found with highest_checkout > 0.
+
+2. Checking Approved Results with Highest Closures Text:
+ResultID: 2, Text: 'Bothwell Maromo *143, Kudangirana *116'
+
+3. Checking for case mismatches in Player names:
+Self-test name check for 'Wonder Machapa': Exact=True, Case-Insensitive=True
+
+--- End of Diagnostics ---

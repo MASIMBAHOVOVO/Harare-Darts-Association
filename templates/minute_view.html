@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}{{ minute.title }} | Harare Darts Association{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <a href="{{ url_for('main.documents') }}" class="back-link"><i class="fas fa-arrow-left"></i> Back to
+            Documents</a>
+        <h1 class="page-title"><i class="fas fa-clipboard-list"></i> {{ minute.title }}</h1>
+        <p class="page-subtitle">Typed Meeting Minutes — {{ minute.uploaded_at.strftime('%d %B %Y') }}</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <article class="minute-content-wrapper">
+            {% if minute.description %}
+            <div class="minute-description-box">
+                <strong>Summary:</strong> {{ minute.description }}
+            </div>
+            {% endif %}
+
+            <div class="minute-body-text">
+                {{ minute.content }}
+            </div>
+
+            <div class="minute-footer">
+                <hr>
+                <p>Official Minutes of the Harare Darts Association</p>
+                <p class="text-muted small">Generated on {{ now.strftime('%d %b %Y') if now else '2026' }}</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<style>
+    .back-link {
+        color: var(--accent-gold);
+        text-decoration: none;
+        display: inline-block;
+        margin-bottom: 1rem;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .back-link:hover {
+        transform: translateX(-5px);
+    }
+
+    .minute-content-wrapper {
+        background: var(--dark-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 3rem;
+        max-width: 900px;
+        margin: 0 auto;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .minute-description-box {
+        background: rgba(212, 175, 55, 0.05);
+        border-left: 4px solid var(--accent-gold);
+        padding: 1rem 1.5rem;
+        margin-bottom: 2.5rem;
+        font-style: italic;
+        color: var(--text-secondary);
+    }
+
+    .minute-body-text {
+        color: var(--text-primary);
+        line-height: 1.8;
+        font-size: 1.1rem;
+        white-space: pre-wrap;
+        /* Fallback for nl2br */
+    }
+
+    .minute-footer {
+        margin-top: 4rem;
+        text-align: center;
+    }
+
+    .minute-footer hr {
+        border: 0;
+        border-top: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .minute-content-wrapper {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

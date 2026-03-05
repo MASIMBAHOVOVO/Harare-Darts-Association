@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#1A6B4A"/>
+      <stop offset="100%" style="stop-color:#0B3D2E"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DABC5E"/>
+      <stop offset="100%" style="stop-color:#C5A13B"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx="150" cy="150" r="145" fill="url(#bg)" stroke="#C5A13B" stroke-width="4"/>
+  <!-- Lion Body - Heraldic Rampant Style -->
+  <g transform="translate(150,150) scale(0.75)" fill="url(#gold)">
+    <!-- Body -->
+    <path d="M-10,60 C-15,40 -20,20 -15,-10 C-10,-30 0,-50 10,-65 C15,-55 20,-40 25,-25 C30,-10 30,10 25,30 C20,45 10,55 -10,60Z"/>
+    <!-- Head -->
+    <circle cx="10" cy="-70" r="22" fill="url(#gold)"/>
+    <!-- Crown/Mane -->
+    <path d="M-12,-85 C-8,-95 0,-100 10,-100 C20,-100 28,-95 32,-85 C28,-88 20,-90 10,-90 C0,-90 -8,-88 -12,-85Z" fill="#DABC5E"/>
+    <!-- Eye -->
+    <circle cx="18" cy="-72" r="3" fill="#0B3D2E"/>
+    <!-- Mouth -->
+    <path d="M25,-62 C30,-58 32,-55 30,-52" stroke="#8B1A1A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Front Left Paw (raised) -->
+    <path d="M25,-25 C35,-35 50,-40 60,-35 C55,-30 50,-25 45,-20 C40,-15 35,-10 25,-10Z" fill="url(#gold)"/>
+    <!-- Claws front -->
+    <circle cx="60" cy="-35" r="3" fill="#8B1A1A"/>
+    <!-- Front Right Paw -->
+    <path d="M-15,-10 C-25,-20 -35,-30 -45,-28 C-42,-22 -38,-18 -30,-12 C-25,-8 -18,-5 -15,-10Z" fill="url(#gold)"/>
+    <!-- Claws -->
+    <circle cx="-45" cy="-28" r="3" fill="#8B1A1A"/>
+    <!-- Back Left Leg -->
+    <path d="M-10,60 C-20,65 -30,75 -35,85 C-30,82 -20,78 -10,72 Z" fill="url(#gold)"/>
+    <!-- Back Right Leg -->
+    <path d="M10,55 C20,65 30,75 35,85 C30,80 20,72 10,65 Z" fill="url(#gold)"/>
+    <!-- Claws back -->
+    <circle cx="-35" cy="85" r="3" fill="#8B1A1A"/>
+    <circle cx="35" cy="85" r="3" fill="#8B1A1A"/>
+    <!-- Tail -->
+    <path d="M-12,55 C-25,45 -40,35 -50,25 C-55,20 -55,10 -48,8 C-42,6 -35,12 -30,20 C-25,28 -20,40 -12,50" fill="url(#gold)" stroke="#B89A30" stroke-width="1"/>
+    <!-- Tail tuft -->
+    <path d="M-52,8 C-58,2 -55,-5 -48,-2 C-42,1 -45,7 -50,8Z" fill="#DABC5E"/>
+  </g>
+  <!-- H.D.A Text -->
+  <text x="150" y="265" text-anchor="middle" font-family="serif" font-weight="bold" font-size="28" fill="#C5A13B" letter-spacing="8">H.D.A</text>
+</svg>

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}League Standings{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-trophy"></i> League Standings</h1>
+        <p class="page-subtitle">Harare Darts League — {{ now.year }} Season</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% if teams %}
+        <div class="table-wrapper standings-wrapper">
+            <table class="data-table standings-table">
+                <thead>
+                    <tr>
+                        <th class="pos-col standings-pos">Position</th>
+                        <th class="standings-team">Team</th>
+                        <th class="standings-played">PLAYED</th>
+                        <th class="standings-won">Won</th>
+                        <th class="standings-lost">Lost</th>
+                        <th class="standings-doubles">DOUBLES</th>
+                        <th class="standings-singles">SINGLES</th>
+                        <th class="standings-scores">Scores</th>
+                        <th class="standings-points">Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team in teams %}
+                    <tr class="{% if loop.index <= 3 %}top-three-row highlight-{{ loop.index }}{% endif %}">
+                        <td class="pos-col">
+                            {% if loop.index == 1 %}
+                            <span class="position-badge gold">1</span>
+                            {% elif loop.index == 2 %}
+                            <span class="position-badge silver">2</span>
+                            {% elif loop.index == 3 %}
+                            <span class="position-badge bronze">3</span>
+                            {% else %}
+                            {{ loop.index }}
+                            {% endif %}
+                        </td>
+                        <td class="team-name-cell"><strong>{{ team.name }}</strong></td>
+                        <td>{{ team.played }}</td>
+                        <td class="standings-won-cell">{{ team.won }}</td>
+                        <td class="standings-lost-cell">{{ team.lost }}</td>
+                        <td>{{ team.doubles }}</td>
+                        <td>{{ team.singles }}</td>
+                        <td class="standings-scores-cell">{{ team.scores }}</td>
+                        <td class="standings-points-cell"><strong><u>{{ team.points }}</u></strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-table fa-3x"></i>
+            <p>No standings data available yet. The league table will be updated as results come in.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

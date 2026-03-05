@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}About & Committee{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-info-circle"></i> About the HDA</h1>
+        <p class="page-subtitle">Our history, mission, and the people behind the league</p>
+    </div>
+</section>
+
+<!-- History Section -->
+<section class="section about-history">
+    <div class="container">
+        <div class="about-content">
+            <div class="about-logo-large">
+                <img src="{{ url_for('static', filename='images/hda_logo.png') }}" alt="HDA Logo">
+            </div>
+            <div class="about-text">
+                <h2 class="sub-title"><i class="fas fa-history"></i> Our History</h2>
+                <p>
+                    The <strong>Harare Darts Association (HDA)</strong> is the premier darts organization in Harare,
+                    Zimbabwe.
+                    Established to promote and organize competitive darts across the city, the HDA brings together
+                    players from pubs, clubs, and community venues in a spirit of friendly rivalry and sportsmanship.
+                </p>
+                <p>
+                    Over the years, the league has grown to encompass multiple teams competing across various venues,
+                    with regular weekly fixtures, exciting tournaments, and a passionate community of players and fans.
+                </p>
+                <h2 class="sub-title" style="margin-top: 2rem;"><i class="fas fa-bullseye"></i> Our Mission</h2>
+                <p>
+                    To foster the growth and development of darts as a competitive sport in Harare, providing a
+                    well-organized league structure, fair play, and opportunities for players of all skill levels
+                    to participate and excel.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Committee Section -->
+<section class="section committee-section">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-users"></i> The Committee</h2>
+        {% if members %}
+        <div class="committee-grid">
+            {% for member in members %}
+            <div class="committee-card">
+                <div class="committee-avatar">
+                    {% if member.photo_url %}
+                    <img src="{{ member.photo_url }}" alt="{{ member.name }}">
+                    {% else %}
+                    <div class="avatar-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <h3 class="committee-name">{{ member.name }}</h3>
+                <span class="committee-role">{{ member.role }}</span>
+
+                {% if member.bio %}
+                <p class="committee-bio">{{ member.bio }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-users fa-3x"></i>
+            <p>Committee information will be added soon.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

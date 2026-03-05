@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Fixtures & Results{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-calendar-alt"></i> Fixtures & Results</h1>
+        <p class="page-subtitle">Weekly match schedules using team draw numbers</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <!-- Team Number Key -->
+        {% if teams %}
+        <div class="team-key-section">
+            <h2 class="sub-title"><i class="fas fa-key"></i> Team Key</h2>
+            <div class="team-key-grid">
+                {% for team in teams %}
+                <div class="team-key-item">
+                    <span class="team-key-number">{{ team.team_number }}</span>
+                    <span class="team-key-name">{{ team.name }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Game Week Filter -->
+        <div class="gw-filter-bar">
+            <form method="GET" action="{{ url_for('main.fixtures') }}" class="gw-filter-form">
+                <label for="gw-select"><i class="fas fa-filter"></i> Show:</label>
+                <select name="gw" id="gw-select" onchange="this.form.submit()" class="gw-select">
+                    <option value="current" {% if gw_filter=='current' %}selected{% endif %}>Current Game Week</option>
+                    <option value="previous" {% if gw_filter=='previous' %}selected{% endif %}>Previous Game Weeks
+                    </option>
+                    <option value="upcoming" {% if gw_filter=='upcoming' %}selected{% endif %}>Upcoming Game Weeks
+                    </option>
+                    {% for gw in game_weeks %}
+                    <option value="{{ gw.week_number }}" {% if gw_filter==gw.week_number|string %}selected{% endif %}>
+                        Game Week {{ gw.week_number }}{% if gw.date %} — {{ gw.date.strftime('%d %b') }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        <!-- Fixtures Display -->
+        {% if weeks_data %}
+        {% for wd in weeks_data %}
+        <div class="gw-fixtures-block">
+            <h3 class="gw-heading">
+                <span class="gw-badge">Game Week {{ wd.game_week.week_number }}</span>
+                {% if wd.game_week.date %}
+                <span class="gw-date">{{ wd.game_week.date.strftime('%d %B %Y') }}</span>
+                {% endif %}
+                <span class="gw-status-badge {{ wd.game_week.status }}">{{ wd.game_week.status|capitalize }}</span>
+            </h3>
+            {% if wd.fixtures %}
+            <div class="fixtures-table-wrapper">
+                <table class="data-table fixtures-table">
+                    <thead>
+                        <tr>
+                            <th>Home</th>
+                            <th class="vs-col">vs</th>
+                            <th>Away</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fixture in wd.fixtures %}
+                        <tr>
+                            <td class="fixture-team-num">
+                                <span class="team-num">{{ fixture.home_team_number }}</span>
+                                {% set ht = fixture.get_home_team() %}
+                                {% if ht %}<span class="team-label">{{ ht.name }}</span>{% endif %}
+                            </td>
+                            <td class="vs-col">
+                                {% if fixture.is_bye %}
+                                <span class="bye-badge">BYE</span>
+                                {% else %}
+                                <span class="vs-badge">v</span>
+                                {% endif %}
+                            </td>
+                            <td class="fixture-team-num">
+                                {% if not fixture.is_bye and fixture.away_team_number %}
+                                <span class="team-num">{{ fixture.away_team_number }}</span>
+                                {% set at = fixture.get_away_team() %}
+                                {% if at %}<span class="team-label">{{ at.name }}</span>{% endif %}
+                                {% else %}
+                                <span class="team-label">Bye</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if fixture.result and fixture.result.approved %}
+                                <span class="score-badge">{{ fixture.result.total_home }} - {{ fixture.result.total_away
+                                    }}</span>
+                                {% elif fixture.result %}
+                                <span class="badge pending">Submitted (Pending Approval)</span>
+                                {% elif wd.game_week.date and wd.game_week.date < today %} <span class="badge danger">
+                                    Pending Result</span>
+                                    {% else %}
+                                    <span class="dash">—</span>
+                                    {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <p>No fixtures for this game week.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-check fa-3x"></i>
+            <p>No fixtures available for the selected filter. Try selecting a different game week.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

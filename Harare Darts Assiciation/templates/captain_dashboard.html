@@ -1,0 +1,455 @@
+{% extends 'base.html' %}
+{% block title %}Captain Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .text-center {
+        text-align: center !important;
+    }
+
+    .score-input-xs {
+        text-align: center;
+        width: 100% !important;
+        max-width: 65px !important;
+        margin: 0 auto;
+        display: block;
+    }
+
+    .detailed-scorecard-table {
+        table-layout: fixed !important;
+    }
+
+    .detailed-scorecard-table td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 0.5rem 0.25rem !important;
+    }
+
+    .central-divider {
+        width: 2% !important;
+        min-width: 10px;
+        padding: 0 !important;
+        border-right: 2px solid var(--accent-gold) !important;
+        background: rgba(197, 161, 59, 0.05);
+    }
+
+    .match-num-col {
+        width: 3% !important;
+        font-weight: 700;
+        color: var(--accent-gold);
+        background: rgba(197, 161, 59, 0.05);
+    }
+</style>
+<section class="page-header dashboard-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-user-shield"></i> Captain Dashboard</h1>
+        <p class="page-subtitle">Welcome, {{ current_user.full_name or current_user.username }} — {{ team.name if team
+            else 'No team assigned' }}</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        {% if not team %}
+        <div class="empty-state">
+            <i class="fas fa-exclamation-triangle fa-3x"></i>
+            <p>You are not assigned to any team. Please contact the Secretary General.</p>
+        </div>
+        {% elif not fixtures %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-check fa-3x"></i>
+            <p>No pending fixtures for your team. All results have been submitted or no fixtures are scheduled.</p>
+        </div>
+        {% else %}
+        <h2 class="sub-title"><i class="fas fa-edit"></i> Submit Scorecard Results</h2>
+
+        {% for fixture in fixtures %}
+        {% set home_team = fixture.get_home_team() %}
+        {% set away_team = fixture.get_away_team() %}
+
+        <div class="dashboard-card scorecard-card">
+            <h4>
+                <span class="team-num">{{ fixture.home_team_number }}</span> {{ home_team.name if home_team else
+                'Unknown' }}
+                <span class="vs-badge">vs</span>
+                <span class="team-num">{{ fixture.away_team_number }}</span> {{ away_team.name if away_team else 'Bye'
+                }}
+                {% if fixture.game_week %}<small>— Game Week {{ fixture.game_week.week_number }}</small>{% endif %}
+            </h4>
+
+            {% if fixture.result %}
+            {% if fixture.result.status == 'declined' %}
+            <div class="alert alert-warning"
+                style="margin-bottom: 1.5rem; border-left: 5px solid #ffc107; background: rgba(255, 193, 7, 0.1); padding: 1rem; border-radius: 4px;">
+                <h5 style="color: #ffc107; margin-bottom: 0.5rem;"><i class="fas fa-exclamation-triangle"></i> Scorecard
+                    Declined</h5>
+                <p style="margin-bottom: 0.5rem;"><strong>Reason:</strong> {{ fixture.result.decline_reason or 'No
+                    reason provided.' }}</p>
+                <p style="margin-bottom: 0; font-size: 0.9rem;">Please correct the errors and resubmit the scorecard.
+                </p>
+            </div>
+            {% set is_amendment = True %}
+            {% else %}
+            <div class="score-submitted">
+                <i class="fas fa-check-circle"></i> Scorecard already submitted ({{ fixture.result.total_home }} - {{
+                fixture.result.total_away }})
+                {% if fixture.result.approved %}— <strong>Approved</strong>{% else %}— <em>Awaiting approval</em>{%
+                endif %}
+            </div>
+            {% set is_amendment = False %}
+            {% endif %}
+            {% else %}
+            {% set is_amendment = False %}
+            {% endif %}
+
+            {% if (not fixture.result or (is_amendment and not fixture.result.approved)) and team.team_number ==
+            fixture.home_team_number %}
+            <form method="POST" action="{{ url_for('admin.submit_score', fixture_id=fixture.id) }}"
+                class="scorecard-form" data-home-team="{{ home_team.name }}" data-away-team="{{ away_team.name }}">
+
+
+                <!-- DETAILED SCORECARD TABLE -->
+                <div class="table-wrapper" style="margin-bottom: 2rem;">
+                    <table class="detailed-scorecard-table">
+                        <colgroup>
+                            <col style="width: 37%;">
+                            <col style="width: 6%;">
+                            <col style="width: 6%;">
+                            <col class="central-divider">
+                            <col style="width: 37%;">
+                            <col style="width: 6%;">
+                            <col style="width: 6%;">
+                        </colgroup>
+                        <thead>
+                            <tr class="scorecard-header-row">
+                                <th colspan="7">ROUND: CAPTAINS</th>
+                            </tr>
+                            <tr class="team-header-row">
+                                <th colspan="3">HOME: {{ home_team.name }}</th>
+                                <th class="central-divider header-divider"></th>
+                                <th colspan="3">AWAY: {{ away_team.name }}</th>
+                            </tr>
+                            <tr class="scorecard-header-row">
+                                <th colspan="7">PAIRS</th>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left;">Players</th>
+                                <th>LW</th>
+                                <th>Res</th>
+                                <th class="central-divider header-divider"></th>
+                                <th style="text-align: left;">Players</th>
+                                <th>LW</th>
+                                <th>Res</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(1, 4) %}
+                            {% set ns = namespace(md=None) %}
+                            {% if is_amendment %}
+                            {% for m in fixture.result.match_details %}
+                            {% if m.match_type == 'pair' and m.match_num == i %}
+                            {% set ns.md = m %}
+                            {% endif %}
+                            {% endfor %}
+                            {% endif %}
+                            <tr>
+                                <!-- HOME PAIR i -->
+                                <td style="text-align: left;">
+                                    <select name="pair_{{ i }}_home_p1" class="player-select">
+                                        <option value="">-- Player 1 --</option>
+                                        {% for player in home_team.players %}
+                                        <option value="{{ player.id }}" {% if ns.md and ns.md.home_player1_id==player.id
+                                            %}selected{% endif %}>{{ player.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div style="margin-top: 4px;"></div>
+                                    <select name="pair_{{ i }}_home_p2" class="player-select">
+                                        <option value="">-- Player 2 --</option>
+                                        {% for player in home_team.players %}
+                                        <option value="{{ player.id }}" {% if ns.md and ns.md.home_player2_id==player.id
+                                            %}selected{% endif %}>{{ player.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="pair_{{ i }}_home_lw"
+                                        value="{{ ns.md.home_legs_won if ns.md else 0 }}" min="0"
+                                        class="score-input-xs text-center"></td>
+                                <td><input type="number" name="pair_{{ i }}_home_res"
+                                        value="{{ ns.md.home_res if ns.md else 0 }}" min="0"
+                                        class="score-input-xs text-center"></td>
+                                <td class="central-divider"></td>
+                                <td style="text-align: left;">
+                                    <select name="pair_{{ i }}_away_p1" class="player-select">
+                                        <option value="">-- Player 1 --</option>
+                                        {% for player in away_team.players %}
+                                        <option value="{{ player.id }}" {% if ns.md and ns.md.away_player1_id==player.id
+                                            %}selected{% endif %}>{{ player.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div style="margin-top: 4px;"></div>
+                                    <select name="pair_{{ i }}_away_p2" class="player-select">
+                                        <option value="">-- Player 2 --</option>
+                                        {% for player in away_team.players %}
+                                        <option value="{{ player.id }}" {% if ns.md and ns.md.away_player2_id==player.id
+                                            %}selected{% endif %}>{{ player.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="pair_{{ i }}_away_lw"
+                                        value="{{ ns.md.away_legs_won if ns.md else 0 }}" min="0"
+                                        class="score-input-xs text-center"></td>
+                                <td><input type="number" name="pair_{{ i }}_away_res"
+                                        value="{{ ns.md.away_res if ns.md else 0 }}" min="0"
+                                        class="score-input-xs text-center"></td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="subtotal-row">
+                                <td colspan="2" style="text-align: right; font-weight: 700; color: var(--accent-gold);">
+                                    PAIR SUBTOTAL</td>
+                                <td><input type="number" name="pairs_home_subtotal"
+                                        class="pairs_home_subtotal score-input-xs text-center" value="0" min="0"
+                                        readonly></td>
+                                <td class="central-divider"></td>
+                                <td colspan="2" style="text-align: right; font-weight: 700; color: var(--accent-gold);">
+                                    PAIR SUBTOTAL</td>
+                                <td><input type="number" name="pairs_away_subtotal"
+                                        class="pairs_away_subtotal score-input-xs text-center" value="0" min="0"
+                                        readonly></td>
+                            </tr>
+
+                            <tr class="scorecard-header-row">
+                                <th colspan="7">SINGLES</th>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="detailed-scorecard-table">
+                        <colgroup>
+                            <col class="match-num-col">
+                            <col style="width: 39%;">
+                            <col style="width: 7%;">
+                            <col class="central-divider">
+                            <col class="match-num-col">
+                            <col style="width: 39%;">
+                            <col style="width: 7%;">
+                        </colgroup>
+                        <thead>
+                            <tr class="scorecard-header-row">
+                                <th colspan="7">SINGLES</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 40px !important;">#</th>
+                                <th style="text-align: left;">Player</th>
+                                <th>TLW</th>
+                                <th class="central-divider header-divider"></th>
+                                <th style="width: 40px !important;">#</th>
+                                <th style="text-align: left;">Player</th>
+                                <th>TLW</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(1, 7) %}
+                            {% set ns = namespace(md=None) %}
+                            {% if is_amendment %}
+                            {% for m in fixture.result.match_details %}
+                            {% if m.match_type == 'single' and m.match_num == i %}
+                            {% set ns.md = m %}
+                            {% endif %}
+                            {% endfor %}
+                            {% endif %}
+                            <tr>
+                                <td class="match-num-col">{{ i }}</td>
+                                <td style="text-align: left;">
+                                    <select name="single_{{ i }}_home_p" class="player-select">
+                                        <option value="">-- Select Player --</option>
+                                        {% for player in home_team.players %}
+                                        <option value="{{ player.id }}" {% if ns.md and ns.md.home_player1_id==player.id
+                                            %}selected{% endif %}>{{ player.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="single_{{ i }}_home_tlw"
+                                        value="{{ ns.md.home_legs_won if ns.md else 0 }}" min="0"
+                                        class="score-input-xs text-center"></td>
+                                <td class="central-divider"></td>
+                                <td class="match-num-col">{{ i }}</td>
+                                <td style="text-align: left;">
+                                    <select name="single_{{ i }}_away_p" class="player-select">
+                                        <option value="">-- Select Player --</option>
+                                        {% for player in away_team.players %}
+                                        <option value="{{ player.id }}" {% if ns.md and ns.md.away_player1_id==player.id
+                                            %}selected{% endif %}>{{ player.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="single_{{ i }}_away_tlw"
+                                        value="{{ ns.md.away_legs_won if ns.md else 0 }}" min="0"
+                                        class="score-input-xs text-center"></td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="subtotal-row">
+                                <td colspan="2" style="text-align: right; font-weight: 700; color: var(--accent-gold);">
+                                    SUB TOTAL</td>
+                                <td><input type="number" name="singles_home_total"
+                                        class="singles_home_total score-input-xs text-center" value="0" min="0"
+                                        readonly></td>
+                                <td class="central-divider"></td>
+                                <td colspan="2" style="text-align: right; font-weight: 700; color: var(--accent-gold);">
+                                    SUB TOTAL</td>
+                                <td><input type="number" name="singles_away_total"
+                                        class="singles_away_total score-input-xs text-center" value="0" min="0"
+                                        readonly></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="detailed-scorecard-table">
+                        <tbody>
+                            <tr class="team-header-row" style="background: var(--dark-card);">
+                                <td colspan="2" style="width: 50%;">
+                                    <strong>OVERALL SCORE FOR: {{ home_team.name }}</strong>
+                                    <input type="number" name="total_home" class="total_home score-input-xs text-center"
+                                        value="0" min="0"
+                                        style="width: 100px; font-size: 1.2rem; margin: 5px auto 0; display: block;"
+                                        readonly>
+                                </td>
+                                <td colspan="2" style="width: 50%;">
+                                    <strong>OVERALL SCORE AGAINST: {{ away_team.name }}</strong>
+                                    <input type="number" name="total_away" class="total_away score-input-xs text-center"
+                                        value="0" min="0"
+                                        style="width: 100px; font-size: 1.2rem; margin: 5px auto 0; display: block;"
+                                        readonly>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="overall-winner-tab"
+                        style="margin-top: -1rem; margin-bottom: 2rem; padding: 1rem; background: var(--dark-card); border: 2px solid var(--accent-gold); border-radius: 0 0 var(--radius-md) var(--radius-md); text-align: center; border-top: none;">
+                        <span
+                            style="font-weight: 700; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1px;">OVERALL
+                            WINNER: </span>
+                        <span class="winner-name-display"
+                            style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-left: 10px;">-</span>
+                    </div>
+                </div>
+
+                <!-- 180s and Highest Close -->
+                <div class="scorecard-section">
+                    <h5 class="scorecard-section-title">ADDITIONAL ACHIEVEMENTS</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-circle-notch"></i> 180's SCORED (List player names)</label>
+                            <textarea name="one_eighties_scored" rows="2" placeholder="e.g. John Smith, Mike Jones"
+                                class="form-textarea">{{ fixture.result.one_eighties_scored if is_amendment else '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-bullseye"></i> HIGHEST CLOSE (List Players & Scores)</label>
+                            <textarea name="highest_close_player" rows="2"
+                                placeholder="e.g. Wonder Machapa * 143, Modekai Dheka * 121"
+                                class="form-textarea">{{ fixture.result.highest_close_player if is_amendment else '' }}</textarea>
+                            <input type="hidden" name="highest_close"
+                                value="{{ fixture.result.highest_close if is_amendment else 0 }}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-sticky-note"></i> NAME OF TEAM SENDING CARD / NOTES</label>
+                        <textarea name="notes" rows="2" placeholder="Your team name and any additional info..."
+                            class="form-textarea">{{ fixture.result.notes if is_amendment else '' }}</textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-gold btn-full"><i class="fas fa-paper-plane"></i> {{ 'Resubmit
+                    Scorecard (Amendment)' if is_amendment else 'Submit Scorecard' }}</button>
+
+            </form>
+            {% else %}
+            <div class="score-awaiting info-box"
+                style="margin-top: 1rem; padding: 1rem; background: rgba(var(--accent-gold-rgb), 0.1); border-left: 4px solid var(--accent-gold); border-radius: 4px;">
+                <p style="margin-bottom: 0;"><i class="fas fa-clock"></i> <strong>Awaiting Home Captain's
+                        Submission:</strong> As the Away Captain, you do not need to submit this scorecard. The home
+                    captain of <strong>{{ home_team.name }}</strong> is responsible for posting the results.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const forms = document.querySelectorAll('.scorecard-form');
+
+        forms.forEach(form => {
+            const homeName = form.dataset.homeTeam;
+            const awayName = form.dataset.awayTeam;
+
+            function updateTotals() {
+                // Pairs Home Subtotal
+                let pairsHomeSub = 0;
+                for (let i = 1; i <= 3; i++) {
+                    const input = form.querySelector(`[name="pair_${i}_home_res"]`);
+                    if (input) pairsHomeSub += parseInt(input.value) || 0;
+                }
+                form.querySelector('.pairs_home_subtotal').value = pairsHomeSub;
+
+                // Pairs Away Subtotal
+                let pairsAwaySub = 0;
+                for (let i = 1; i <= 3; i++) {
+                    const input = form.querySelector(`[name="pair_${i}_away_res"]`);
+                    if (input) pairsAwaySub += parseInt(input.value) || 0;
+                }
+                form.querySelector('.pairs_away_subtotal').value = pairsAwaySub;
+
+                // Singles Home Total (Legs won)
+                let singlesHomeTotal = 0;
+                for (let i = 1; i <= 6; i++) {
+                    const input = form.querySelector(`[name="single_${i}_home_tlw"]`);
+                    if (input) singlesHomeTotal += parseInt(input.value) || 0;
+                }
+                form.querySelector('.singles_home_total').value = singlesHomeTotal;
+
+                // Singles Away Total (Legs won)
+                let singlesAwayTotal = 0;
+                for (let i = 1; i <= 6; i++) {
+                    const input = form.querySelector(`[name="single_${i}_away_tlw"]`);
+                    if (input) singlesAwayTotal += parseInt(input.value) || 0;
+                }
+                form.querySelector('.singles_away_total').value = singlesAwayTotal;
+
+                // Overall Totals (Pairs games won + Singles legs won)
+                const totalHome = pairsHomeSub + singlesHomeTotal;
+                const totalAway = pairsAwaySub + singlesAwayTotal;
+                form.querySelector('.total_home').value = totalHome;
+                form.querySelector('.total_away').value = totalAway;
+
+                // Dynamic Winner Display
+                const winnerDisplay = form.querySelector('.winner-name-display');
+                if (totalHome > totalAway) {
+                    winnerDisplay.textContent = homeName;
+                    winnerDisplay.style.color = "var(--accent-gold)";
+                } else if (totalAway > totalHome) {
+                    winnerDisplay.textContent = awayName;
+                    winnerDisplay.style.color = "var(--accent-gold)";
+                } else {
+                    winnerDisplay.textContent = (totalHome === 0 && totalAway === 0) ? "-" : "DRAW";
+                    winnerDisplay.style.color = "#fff";
+                }
+            }
+
+            form.querySelectorAll('input[type="number"]').forEach(input => {
+                input.addEventListener('input', updateTotals);
+            });
+
+            // Run once on load to initialize subtotals
+            updateTotals();
+        });
+    });
+</script>
+{% endblock %}

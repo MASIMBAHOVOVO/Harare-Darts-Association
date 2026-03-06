@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <img src="{{ url_for('static', filename='images/hda_logo.png') }}" alt="HDA Logo" class="hero-logo">
+        <h1 class="hero-title">Harare Darts<br><span class="gold-text">Association</span></h1>
+        <p class="hero-subtitle">The home of competitive darts in Harare</p>
+        <div class="hero-cta">
+            <a href="{{ url_for('main.standings') }}" class="btn btn-gold"><i class="fas fa-trophy"></i> View Standings</a>
+            <a href="{{ url_for('main.fixtures') }}" class="btn btn-outline"><i class="fas fa-calendar-alt"></i> Fixtures</a>
+        </div>
+    </div>
+    <div class="hero-dart-decoration">
+        <i class="fas fa-bullseye"></i>
+    </div>
+</section>
+
+<!-- Upcoming Tournaments Countdown -->
+<section class="section tournaments-section">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-clock"></i> Upcoming Tournaments</h2>
+        {% if tournaments %}
+        <div class="tournament-grid">
+            {% for tournament in tournaments %}
+            <div class="tournament-card" data-date="{{ tournament.date.isoformat() }}">
+                <div class="tournament-badge">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3 class="tournament-name">{{ tournament.name }}</h3>
+                <div class="tournament-details">
+                    <p><i class="fas fa-calendar"></i> {{ tournament.date.strftime('%d %B %Y, %H:%M') }}</p>
+                    {% if tournament.venue %}
+                    <p><i class="fas fa-map-marker-alt"></i> {{ tournament.venue }}</p>
+                    {% endif %}
+                </div>
+                {% if tournament.description %}
+                <p class="tournament-desc">{{ tournament.description }}</p>
+                {% endif %}
+                <div class="countdown" id="countdown-{{ tournament.id }}" data-target="{{ tournament.date.isoformat() }}">
+                    <div class="countdown-item">
+                        <span class="countdown-value days">--</span>
+                        <span class="countdown-label">Days</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="countdown-value hours">--</span>
+                        <span class="countdown-label">Hours</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="countdown-value minutes">--</span>
+                        <span class="countdown-label">Min</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="countdown-value seconds">--</span>
+                        <span class="countdown-label">Sec</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-plus fa-3x"></i>
+            <p>No upcoming tournaments at the moment. Check back soon!</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Quick Links Section -->
+<section class="section quick-links-section">
+    <div class="container">
+        <h2 class="section-title"><i class="fas fa-th-large"></i> Explore</h2>
+        <div class="quick-links-grid">
+            <a href="{{ url_for('main.standings') }}" class="quick-link-card">
+                <div class="ql-icon"><i class="fas fa-trophy"></i></div>
+                <h3>League Standings</h3>
+                <p>View the current league table and team rankings</p>
+            </a>
+            <a href="{{ url_for('main.fixtures') }}" class="quick-link-card">
+                <div class="ql-icon"><i class="fas fa-calendar-alt"></i></div>
+                <h3>Fixtures & Results</h3>
+                <p>Upcoming matches and past results</p>
+            </a>
+            <a href="{{ url_for('main.player_stats') }}" class="quick-link-card">
+                <div class="ql-icon"><i class="fas fa-star"></i></div>
+                <h3>Wall of Fame</h3>
+                <p>Top checkouts, 180s, and season averages</p>
+            </a>
+            <a href="{{ url_for('main.venues') }}" class="quick-link-card">
+                <div class="ql-icon"><i class="fas fa-map-marker-alt"></i></div>
+                <h3>Venue Directory</h3>
+                <p>Find participating pubs and clubs</p>
+            </a>
+            <a href="{{ url_for('main.documents') }}" class="quick-link-card">
+                <div class="ql-icon"><i class="fas fa-file-alt"></i></div>
+                <h3>Documents</h3>
+                <p>Rules, AGM minutes, and forms</p>
+            </a>
+            <a href="{{ url_for('main.about') }}" class="quick-link-card">
+                <div class="ql-icon"><i class="fas fa-users"></i></div>
+                <h3>About HDA</h3>
+                <p>Our history, mission, and committee</p>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

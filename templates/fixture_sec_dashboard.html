@@ -1,0 +1,652 @@
+{% extends 'base.html' %}
+{% block title %}Fixture Secretary Dashboard{% endblock %}
+
+{% block content %}
+<section class="page-header dashboard-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-clipboard-list"></i> Fixture Secretary Dashboard</h1>
+        <p class="page-subtitle">Manage fixtures, approve results, update standings & player stats</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <!-- Dashboard Tabs -->
+        <div class="dash-tabs">
+            <button class="dash-tab active" data-tab="pending"><i class="fas fa-clock"></i> Pending Results</button>
+            <button class="dash-tab" data-tab="team-numbers"><i class="fas fa-sort-numeric-down"></i> Team
+                Numbers</button>
+            <button class="dash-tab" data-tab="fixtures"><i class="fas fa-calendar-plus"></i> Fixtures</button>
+            <button class="dash-tab" data-tab="standings"><i class="fas fa-table"></i> Standings</button>
+            <button class="dash-tab" data-tab="player-stats"><i class="fas fa-chart-line"></i> Player Stats</button>
+        </div>
+
+        <!-- ========== PENDING RESULTS TAB ========== -->
+        <div class="dash-panel active" id="pending">
+            <h2 class="sub-title"><i class="fas fa-hourglass-half"></i> Pending Results by Game Week</h2>
+
+            {% if pending_by_gw %}
+            {% for gw_num, results in pending_by_gw|dictsort %}
+            <div class="gw-pending-group">
+                <h3 class="gw-heading"><span class="gw-badge">Game Week {{ gw_num }}</span></h3>
+                {% for result in results %}
+                {% set fixture = result.fixture %}
+                {% set home_team = fixture.get_home_team() %}
+                {% set away_team = fixture.get_away_team() %}
+                <div class="dashboard-card scorecard-card">
+                    <h4>
+                        <span class="team-num">{{ fixture.home_team_number }}</span> {{ home_team.name if home_team else
+                        '?' }}
+                        <span class="vs-badge">vs</span>
+                        <span class="team-num">{{ fixture.away_team_number or 'Bye' }}</span> {{ away_team.name if
+                        away_team else '' }}
+                    </h4>
+                    <p class="result-submitter"><i class="fas fa-user"></i> Submitted by {{ result.submitter.full_name
+                        if result.submitter else 'Unknown' }} — {{ result.submitted_at.strftime('%d %b %Y %H:%M') }}</p>
+
+                    <!-- Scorecard Summary -->
+                    <div class="scorecard-summary">
+                        <div class="scorecard-summary-row">
+                            <span class="scorecard-label">Pairs (LW - Doubles):</span>
+                            <span>HOME {{ result.pairs_home_subtotal }} — {{ result.pairs_away_subtotal }} AWAY</span>
+                        </div>
+                        <div class="scorecard-summary-row">
+                            <span class="scorecard-label">Singles (TLW):</span>
+                            <span>HOME {{ result.singles_home_total }} — {{ result.singles_away_total }} AWAY</span>
+                        </div>
+                        <div class="scorecard-summary-row total-row">
+                            <span class="scorecard-label">TOTAL:</span>
+                            <span class="score-badge">{{ result.total_home }} - {{ result.total_away }}</span>
+                        </div>
+
+                        <!-- Match Details Breakdown -->
+                        {% if result.match_details %}
+                        <div class="match-details-breakdown"
+                            style="margin-top: 1rem; border-top: 1px dashed var(--border-gold); padding-top: 0.75rem;">
+                            <h5 style="color: var(--accent-gold); font-size: 0.85rem; margin-bottom: 0.5rem;">MATCH
+                                BREAKDOWN</h5>
+                            <div class="table-wrapper" style="border: none;">
+                                <table class="data-table"
+                                    style="font-size: 0.8rem; border-collapse: separate; border-spacing: 0 4px;">
+                                    <thead>
+                                        <tr>
+                                            <th>TYPE</th>
+                                            <th>HOME PLAYER(S)</th>
+                                            <th class="text-center">HOME SCORES</th>
+                                            <th class="text-center">AWAY SCORES</th>
+                                            <th>AWAY PLAYER(S)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- DOUBLES SECTION -->
+                                        <tr class="table-group-header">
+                                            <td colspan="5"
+                                                style="background: rgba(197, 161, 59, 0.1); font-weight: 700; color: var(--accent-gold); padding: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">
+                                                <i class="fas fa-users"></i> Doubles
+                                            </td>
+                                        </tr>
+                                        {% for md in result.match_details|sort(attribute='match_num') if md.match_type
+                                        == 'pair' %}
+                                        <tr>
+                                            <td style="color: var(--text-muted); font-weight: 600;">Double {{
+                                                md.match_num }}</td>
+                                            <td>
+                                                <strong>{{ md.home_player1.name if md.home_player1 else '—' }}</strong>
+                                                {% if md.home_player2 %}<br><strong>{{ md.home_player2.name
+                                                    }}</strong>{% endif %}
+                                            </td>
+                                            <td class="text-center" style="font-weight: 700; color: #fff;">
+                                                <span
+                                                    style="font-size: 0.75rem; color: var(--text-muted); display: block;">LW</span>
+                                                {{ md.home_legs_won }}
+                                            </td>
+                                            <td class="text-center" style="font-weight: 700; color: #fff;">
+                                                <span
+                                                    style="font-size: 0.75rem; color: var(--text-muted); display: block;">LW</span>
+                                                {{ md.away_legs_won }}
+                                            </td>
+                                            <td>
+                                                <strong>{{ md.away_player1.name if md.away_player1 else '—' }}</strong>
+                                                {% if md.away_player2 %}<br><strong>{{ md.away_player2.name
+                                                    }}</strong>{% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+
+                                        <!-- SINGLES SECTION -->
+                                        <tr class="table-group-header">
+                                            <td colspan="5"
+                                                style="background: rgba(197, 161, 59, 0.1); font-weight: 700; color: var(--accent-gold); padding: 0.5rem; text-transform: uppercase; letter-spacing: 1px; border-top: 1px solid rgba(197, 161, 59, 0.2);">
+                                                <i class="fas fa-user"></i> Singles
+                                            </td>
+                                        </tr>
+                                        {% for md in result.match_details|sort(attribute='match_num') if md.match_type
+                                        == 'single' %}
+                                        <tr>
+                                            <td style="color: var(--text-muted); font-weight: 600;">{{ md.match_num }}
+                                            </td>
+                                            <td><strong>{{ md.home_player1.name if md.home_player1 else '—' }}</strong>
+                                            </td>
+                                            <td class="text-center" style="font-weight: 700; color: #fff;">
+                                                <span
+                                                    style="font-size: 0.75rem; color: var(--text-muted); display: block;">TLW</span>
+                                                {{ md.home_legs_won }}
+                                            </td>
+                                            <td class="text-center" style="font-weight: 700; color: #fff;">
+                                                <span
+                                                    style="font-size: 0.75rem; color: var(--text-muted); display: block;">TLW</span>
+                                                {{ md.away_legs_won }}
+                                            </td>
+                                            <td><strong>{{ md.away_player1.name if md.away_player1 else '—' }}</strong>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if result.one_eighties_scored %}
+                        <div class="scorecard-summary-row">
+                            <span class="scorecard-label">180s:</span>
+                            <span>{{ result.one_eighties_scored }}</span>
+                        </div>
+                        {% endif %}
+                        {% if result.highest_close_player %}
+                        <div class="scorecard-summary-row">
+                            <span class="scorecard-label">Highest Closures:</span>
+                            <span>{{ result.highest_close_player }}</span>
+                        </div>
+                        {% elif result.highest_close > 0 %}
+                        <div class="scorecard-summary-row">
+                            <span class="scorecard-label">Highest Close:</span>
+                            <span>{{ result.highest_close }}</span>
+                        </div>
+                        {% endif %}
+                        {% if result.notes %}
+                        <p class="result-notes"><em>{{ result.notes }}</em></p>
+                        {% endif %}
+                    </div>
+
+                    <div class="dash-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <form method="POST" action="{{ url_for('admin.approve_result', result_id=result.id) }}">
+                            <button type="submit" class="btn btn-gold btn-sm"><i class="fas fa-check"></i> Approve
+                                Result</button>
+                        </form>
+                        <button type="button" class="btn btn-danger btn-sm decline-result-btn" data-id="{{ result.id }}"
+                            data-teams="{{ home_team.name if home_team else '?' }} vs {{ away_team.name if away_team else '?' }}">
+                            <i class="fas fa-times"></i> Decline
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state small">
+                <i class="fas fa-check-circle fa-2x"></i>
+                <p>No pending results to approve.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ========== TEAM NUMBERS TAB ========== -->
+        <div class="dash-panel" id="team-numbers">
+            <h2 class="sub-title"><i class="fas fa-sort-numeric-down"></i> Assign Draw Numbers to Teams</h2>
+            <p class="text-muted" style="margin-bottom:1.5rem;">Assign the number drawn by each team. This number
+                represents the team on the fixtures table.</p>
+
+            {% if teams %}
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Captain</th>
+                            <th>Current Number</th>
+                            <th>Assign Number</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in teams %}
+                        <tr>
+                            <td><strong>{{ team.name }}</strong></td>
+                            <td>{{ team.captain_name or '—' }}</td>
+                            <td>
+                                {% if team.team_number %}
+                                <span class="team-num">{{ team.team_number }}</span>
+                                {% else %}
+                                <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin.assign_team_number', team_id=team.id) }}"
+                                    class="inline-form">
+                                    <input type="number" name="team_number" min="1" value="{{ team.team_number or '' }}"
+                                        class="score-input-sm" style="width:60px;">
+                                    <button type="submit" class="btn btn-gold btn-xs"><i
+                                            class="fas fa-save"></i></button>
+                                </form>
+                            </td>
+                            <td>
+                                <button class="btn btn-outline btn-xs edit-team-btn" data-id="{{ team.id }}"
+                                    data-name="{{ team.name }}" data-captain="{{ team.captain_name or '' }}"
+                                    data-venue="{{ team.venue_name or '' }}" data-phone="{{ team.phone_number or '' }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('admin.delete_team', team_id=team.id) }}"
+                                    class="inline-form" onsubmit="return confirm('Delete team {{ team.name }}?')">
+                                    <button type="submit" class="btn btn-danger btn-xs"><i
+                                            class="fas fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <p>No teams available. Teams need to be added by the Secretary General first.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ========== FIXTURES TAB ========== -->
+        <div class="dash-panel" id="fixtures">
+            <h2 class="sub-title"><i class="fas fa-calendar-plus"></i> Manage Game Weeks & Fixtures</h2>
+
+            <!-- Add Game Week -->
+            <div class="admin-form">
+                <h3 style="margin-bottom:1rem;">Add Game Week</h3>
+                <form method="POST" action="{{ url_for('admin.add_game_week') }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Week Number *</label>
+                            <input type="number" name="week_number" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" name="date">
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select name="status">
+                                <option value="upcoming">Upcoming</option>
+                                <option value="current">Current</option>
+                                <option value="previous">Previous</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Week</button>
+                </form>
+            </div>
+
+            <!-- Game Week Status List -->
+            {% if game_weeks %}
+            <div class="gw-list" style="margin-top:1.5rem;">
+                <h3 class="sub-title" style="font-size:1.1rem;"><i class="fas fa-list"></i> Game Weeks</h3>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Week</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Update</th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for gw in game_weeks %}
+                            <tr>
+                                <td><strong>GW{{ gw.week_number }}</strong></td>
+                                <td>{{ gw.date.strftime('%d %b %Y') if gw.date else '—' }}</td>
+                                <td><span class="gw-status-badge {{ gw.status }}">{{ gw.status|capitalize }}</span></td>
+                                <td>
+                                    <form method="POST"
+                                        action="{{ url_for('admin.update_game_week_status', gw_id=gw.id) }}"
+                                        class="inline-form">
+                                        <select name="status" class="gw-status-select">
+                                            <option value="previous" {% if gw.status=='previous' %}selected{% endif %}>
+                                                Previous</option>
+                                            <option value="current" {% if gw.status=='current' %}selected{% endif %}>
+                                                Current</option>
+                                            <option value="upcoming" {% if gw.status=='upcoming' %}selected{% endif %}>
+                                                Upcoming</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-gold btn-xs"><i
+                                                class="fas fa-save"></i></button>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('admin.delete_game_week', gw_id=gw.id) }}"
+                                        class="inline-form"
+                                        onsubmit="return confirm('Delete Game Week and all its fixtures?')">
+                                        <button type="submit" class="btn btn-danger btn-xs"><i
+                                                class="fas fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Add Fixtures to Game Week -->
+            {% if game_weeks %}
+            <div class="admin-form" style="margin-top:1.5rem;">
+                <h3 style="margin-bottom:1rem;">Add Fixtures</h3>
+                <p class="text-muted" style="margin-bottom:1rem;">Enter fixtures using team numbers, one per line.
+                    Format: <code>1v20</code>, <code>2v19</code>, <code>9vBye</code></p>
+                <form method="POST" action="{{ url_for('admin.add_fixtures') }}">
+                    <div class="form-group">
+                        <label>Game Week</label>
+                        <select name="game_week_id" required>
+                            {% for gw in game_weeks %}
+                            <option value="{{ gw.id }}">Game Week {{ gw.week_number }}{% if gw.date %} — {{
+                                gw.date.strftime('%d %b') }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fixtures (one per line)</label>
+                        <textarea name="fixtures_text" rows="10"
+                            placeholder="1v20&#10;2v19&#10;3v18&#10;4v17&#10;5v16&#10;6v15&#10;7v14&#10;8v13&#10;9vBye"
+                            class="form-textarea fixture-textarea"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-gold"><i class="fas fa-plus"></i> Add Fixtures</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ========== STANDINGS TAB ========== -->
+        <div class="dash-panel" id="standings">
+            <h2 class="sub-title"><i class="fas fa-table"></i> Update League Standings</h2>
+            <p class="text-muted" style="margin-bottom:1rem;">Update team standings matching the format: Position, Team,
+                Played, Won, Lost, Doubles, Singles, Scores, Points</p>
+
+            {% if teams %}
+            <div class="table-wrapper">
+                <table class="data-table standings-edit-table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Played</th>
+                            <th>Won</th>
+                            <th>Lost</th>
+                            <th>Doubles</th>
+                            <th>Singles</th>
+                            <th>Scores</th>
+                            <th>Points</th>
+                            <th>Save</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in teams %}
+                        <tr>
+                            <td><strong>{{ team.name }}</strong></td>
+                            <form method="POST" action="{{ url_for('admin.update_team_standings', team_id=team.id) }}"
+                                class="inline-form">
+                                <td><input type="number" name="played" value="{{ team.played }}" class="score-input-sm">
+                                </td>
+                                <td><input type="number" name="won" value="{{ team.won }}" class="score-input-sm"></td>
+                                <td><input type="number" name="lost" value="{{ team.lost }}" class="score-input-sm">
+                                </td>
+                                <td><input type="number" name="doubles" value="{{ team.doubles }}"
+                                        class="score-input-sm"></td>
+                                <td><input type="number" name="singles" value="{{ team.singles }}"
+                                        class="score-input-sm"></td>
+                                <td><input type="number" name="scores" value="{{ team.scores }}" class="score-input-sm">
+                                </td>
+                                <td><input type="number" name="points" value="{{ team.points }}" class="score-input-sm">
+                                </td>
+                                <td><button type="submit" class="btn btn-gold btn-xs"><i
+                                            class="fas fa-save"></i></button></td>
+                            </form>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <p>No teams available.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ========== PLAYER STATS TAB ========== -->
+        <div class="dash-panel" id="player-stats">
+            <h2 class="sub-title"><i class="fas fa-chart-line"></i> Update Player Stats Per Game Week</h2>
+
+            <!-- Player Search -->
+            <div class="admin-form">
+                <form method="GET" action="{{ url_for('admin.fixture_sec_dashboard') }}" class="search-form">
+                    <input type="hidden" name="tab" value="player-stats">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="player_search" value="{{ search_query }}"
+                            placeholder="Search player by name..." class="search-input">
+                    </div>
+                    <button type="submit" class="btn btn-gold btn-sm"><i class="fas fa-search"></i> Search</button>
+                </form>
+            </div>
+
+            {% if searched_players %}
+            <div style="margin-top:1.5rem;">
+                {% for player in searched_players %}
+                <div class="dashboard-card">
+                    <h4>{{ player.name }} {% if player.team %}<small>— {{ player.team.name }}</small>{% endif %}</h4>
+
+                    {% if player.game_week_stats %}
+                    <div class="table-wrapper" style="margin:1rem 0;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>GW</th>
+                                    <th>Played</th>
+                                    <th>Won</th>
+                                    <th>180s</th>
+                                    <th>High Checkout</th>
+                                    <th>Delete</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in player.game_week_stats|sort(attribute='game_week') %}
+                                <tr>
+                                    <td><strong>GW{{ s.game_week }}</strong></td>
+                                    <td>{{ s.games_played }}</td>
+                                    <td>{{ s.games_won }}</td>
+                                    <td>{{ s.one_eighties }}</td>
+                                    <td>{{ s.highest_checkout }}</td>
+                                    <td>
+                                        <form method="POST"
+                                            action="{{ url_for('admin.delete_player_stats', stats_id=s.id) }}"
+                                            class="inline-form" onsubmit="return confirm('Delete these stats?')">
+                                            <button type="submit" class="btn btn-danger btn-xs"><i
+                                                    class="fas fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    <!-- Add/Update GW Stats -->
+                    <form method="POST" action="{{ url_for('admin.update_player_stats', player_id=player.id) }}"
+                        class="admin-form" style="margin-top:1rem;">
+                        <h5 style="margin-bottom:0.75rem;">Add / Update Game Week</h5>
+                        <div class="form-row">
+                            <div class="form-group mini">
+                                <label>Game Week</label>
+                                <input type="number" name="game_week" min="1" max="20" required placeholder="GW#">
+                            </div>
+                            <div class="form-group mini">
+                                <label>Games Played</label>
+                                <input type="number" name="games_played" min="0" value="0">
+                            </div>
+                            <div class="form-group mini">
+                                <label>Games Won</label>
+                                <input type="number" name="games_won" min="0" value="0">
+                            </div>
+                            <div class="form-group mini">
+                                <label>180s</label>
+                                <input type="number" name="one_eighties" min="0" value="0">
+                            </div>
+                            <div class="form-group mini">
+                                <label>High Checkout</label>
+                                <input type="number" name="highest_checkout" min="0" value="0">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-gold btn-sm"><i class="fas fa-save"></i> Save
+                            Stats</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% elif search_query %}
+            <div class="empty-state small" style="margin-top:1rem;">
+                <p>No players found matching "{{ search_query }}".</p>
+            </div>
+            {% else %}
+            <div class="empty-state small" style="margin-top:1rem;">
+                <i class="fas fa-search fa-2x"></i>
+                <p>Search for a player above to update their game week stats.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Edit Team Modal -->
+<div class="modal-overlay" id="editTeamModal" style="display:none;">
+    <div class="modal-card">
+        <h3><i class="fas fa-edit"></i> Edit Team</h3>
+        <form method="POST" id="editTeamForm">
+            <div class="form-group">
+                <label>Team Name</label>
+                <input type="text" name="name" id="edit-team-name" required>
+            </div>
+            <div class="form-group">
+                <label>Captain Name</label>
+                <input type="text" name="captain_name" id="edit-team-captain">
+            </div>
+            <div class="form-group">
+                <label>Venue</label>
+                <input type="text" name="venue_name" id="edit-team-venue">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" name="phone_number" id="edit-team-phone">
+            </div>
+            <div class="btn-row">
+                <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Save</button>
+                <button type="button" class="btn btn-outline" onclick="closeTeamModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Decline Result Modal -->
+<div class="modal-overlay" id="declineResultModal" style="display:none;">
+    <div class="modal-card">
+        <h3><i class="fas fa-times-circle"></i> Decline Scorecard</h3>
+        <p id="decline-match-info" style="margin-bottom: 1rem; color: var(--text-muted);"></p>
+        <form method="POST" id="declineResultForm">
+            <div class="form-group">
+                <label>Reason for Declining *</label>
+                <textarea name="decline_reason" rows="4" required
+                    placeholder="Explain why this scorecard is being returned (e.g., incorrect player names, score mismatch)..."></textarea>
+            </div>
+            <div class="btn-row">
+                <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Decline Result</button>
+                <button type="button" class="btn btn-outline" onclick="closeDeclineModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab switching logic
+    document.querySelectorAll('.dash-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and panels
+            document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding panel
+            tab.classList.add('active');
+            const panelId = tab.dataset.tab;
+            document.getElementById(panelId).classList.add('active');
+
+            // Update URL for deep linking
+            const url = new URL(window.location);
+            url.searchParams.set('tab', panelId);
+            window.history.pushState({}, '', url);
+        });
+    });
+
+    // Auto-open the correct tab from URL param (initial load)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam) {
+        const targetTab = document.querySelector(`[data-tab="${tabParam}"]`);
+        const targetPanel = document.getElementById(tabParam);
+        if (targetTab && targetPanel) {
+            document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('active'));
+            targetTab.classList.add('active');
+            targetPanel.classList.add('active');
+        }
+    }
+
+    // Edit team modal
+    document.querySelectorAll('.edit-team-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tid = btn.dataset.id;
+            document.getElementById('editTeamForm').action = '/dashboard/secretary/edit-team/' + tid;
+            document.getElementById('edit-team-name').value = btn.dataset.name;
+            document.getElementById('edit-team-captain').value = btn.dataset.captain;
+            document.getElementById('edit-team-venue').value = btn.dataset.venue;
+            document.getElementById('edit-team-phone').value = btn.dataset.phone;
+            document.getElementById('editTeamModal').style.display = 'flex';
+        });
+    });
+
+    function closeTeamModal() {
+        document.getElementById('editTeamModal').style.display = 'none';
+    }
+
+    document.getElementById('editTeamModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeTeamModal();
+    });
+
+    // Decline Result Modal
+    document.querySelectorAll('.decline-result-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const rid = btn.dataset.id;
+            const teams = btn.dataset.teams;
+            document.getElementById('declineResultForm').action = '/dashboard/fixture-secretary/decline-result/' + rid;
+            document.getElementById('decline-match-info').textContent = 'Match: ' + teams;
+            document.getElementById('declineResultModal').style.display = 'flex';
+        });
+    });
+
+    function closeDeclineModal() {
+        document.getElementById('declineResultModal').style.display = 'none';
+    }
+
+    document.getElementById('declineResultModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeDeclineModal();
+    });
+</script>
+{% endblock %}

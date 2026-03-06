@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Wall of Fame{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-star"></i> Wall of Fame</h1>
+        <p class="page-subtitle">Top performers across all game weeks — {{ now.year }} Season</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <!-- Stat Type Dropdown -->
+        <div class="gw-filter-bar">
+            <form method="GET" action="{{ url_for('main.player_stats') }}" class="gw-filter-form">
+                <label for="stat-select"><i class="fas fa-chart-bar"></i> View:</label>
+                <select name="stat" id="stat-select" onchange="this.form.submit()" class="gw-select">
+                    <option value="games_won" {% if stat_type=='games_won' %}selected{% endif %}>Games Won Per Game Week
+                    </option>
+                    <option value="highest_checkout" {% if stat_type=='highest_checkout' %}selected{% endif %}>Highest
+                        Checkouts</option>
+                    <option value="most_180s" {% if stat_type=='most_180s' %}selected{% endif %}>Most 180s</option>
+                </select>
+            </form>
+        </div>
+
+        {% if stat_type == 'highest_checkout' %}
+        <!-- Highest Checkouts — Simple ranked list -->
+        <div class="wof-section">
+            <h2 class="wof-table-title"><i class="fas fa-bullseye"></i> Highest Checkouts</h2>
+            {% if checkout_stats %}
+            <div class="table-wrapper">
+                <table class="data-table wof-table wof-checkout-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Club Name</th>
+                            <th class="highlight-col">Highest Checkout</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in checkout_stats %}
+                        <tr class="{% if loop.index <= 3 %}top-three-row highlight-{{ loop.index }}{% endif %}">
+                            <td><strong>{{ stat.name }}</strong></td>
+                            <td>{{ stat.team_name or '' }}</td>
+                            <td class="highlight-col stat-value">{{ stat.best_checkout }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <p>No checkout data recorded yet.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {% elif stat_type == 'most_180s' %}
+        <!-- 180 Hits Per Game Week -->
+        <div class="wof-section">
+            <h2 class="wof-table-title"><i class="fas fa-circle-notch"></i> 180 Hits Per Game Week</h2>
+            {% if player_data %}
+            <div class="table-wrapper">
+                <table class="data-table wof-table wof-gw-table">
+                    <thead>
+                        <tr>
+                            <th class="wof-name-col">PLAYERS NAME</th>
+                            {% for gw in range(1, max_gw + 1) %}
+                            <th class="gw-col">GW{{ gw }}</th>
+                            {% endfor %}
+                            <th class="total-col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in player_data %}
+                        <tr class="{% if loop.index <= 3 %}top-three-row highlight-{{ loop.index }}{% endif %}">
+                            <td class="wof-name-col"><strong>{{ p.name }}</strong></td>
+                            {% for gw in range(1, max_gw + 1) %}
+                            <td class="gw-col {% if p.gw_data.get(gw) %}has-value{% endif %}">{{ p.gw_data.get(gw, '')
+                                }}</td>
+                            {% endfor %}
+                            <td class="total-col stat-value"><strong>{{ p.display_total }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <p>No 180s recorded yet.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {% else %}
+        <!-- Games Won Per Game Week (default) -->
+        <div class="wof-section">
+            <h2 class="wof-table-title"><i class="fas fa-trophy"></i> Games Won Per Game Week</h2>
+            {% if player_data %}
+            <div class="table-wrapper">
+                <table class="data-table wof-table wof-gw-table">
+                    <thead>
+                        <tr>
+                            <th class="wof-name-col">PLAYER Name</th>
+                            <th class="wof-club-col">Club Name</th>
+                            {% for gw in range(1, max_gw + 1) %}
+                            <th class="gw-col">GW{{ gw }}</th>
+                            {% endfor %}
+                            <th class="total-col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in player_data %}
+                        <tr class="{% if loop.index <= 3 %}top-three-row highlight-{{ loop.index }}{% endif %}">
+                            <td class="wof-name-col"><strong>{{ p.name }}</strong></td>
+                            <td class="wof-club-col">{{ p.team_name }}</td>
+                            {% for gw in range(1, max_gw + 1) %}
+                            <td class="gw-col {% if p.gw_data.get(gw) %}has-value{% endif %}">{{ p.gw_data.get(gw, '')
+                                }}</td>
+                            {% endfor %}
+                            <td class="total-col stat-value"><strong>{{ p.display_total }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <p>No games won data yet. Stats will appear as game weeks are recorded.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

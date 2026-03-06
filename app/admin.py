@@ -28,15 +28,18 @@ def captain_dashboard():
     pending_fixtures = []
     if user_team and user_team.team_number:
         tn = user_team.team_number
-        # Query for fixtures where:
-        # 1. User's team is home or away, exclude byes
-        # 2. AND (fixture not yet marked as played OR has a pending result)
+        # Query for fixtures where user's team is participating and result is needed:
+        # 1. Fixture was played (is_played=True) but no result submitted yet, OR
+        # 2. Result exists but not approved (pending admin approval)
         query = Fixture.query.outerjoin(Result).filter(
             ((Fixture.home_team_number == tn) | (Fixture.away_team_number == tn)),
             Fixture.is_bye == False,  # noqa: E712
-            # Either not yet played OR has pending result (result exists but not approved)
+            # Either match was played but no result, or result exists but not approved
             db.or_(
-                Fixture.is_played == False,  # noqa: E712
+                db.and_(
+                    Fixture.is_played == True,  # noqa: E712
+                    Result.id == None  # noqa: E712
+                ),
                 db.and_(
                     Result.id != None,  # noqa: E712
                     Result.approved == False  # noqa: E712

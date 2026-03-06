@@ -1,4 +1,5 @@
 """Flask application factory for the Harare Darts Association website."""
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -11,10 +12,15 @@ login_manager.login_message_category = 'info'
 
 def create_app():
     """Create and configure the Flask application."""
+    # Calculate absolute paths for static and template folders
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    template_folder = os.path.join(project_root, 'templates')
+    static_folder = os.path.join(project_root, 'static')
+    
     app = Flask(
         __name__,
-        template_folder='../templates',
-        static_folder='../static',
+        template_folder=template_folder,
+        static_folder=static_folder,
         static_url_path='/static'
     )
     app.config.from_object('app.config.Config')

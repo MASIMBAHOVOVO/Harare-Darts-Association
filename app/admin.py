@@ -38,10 +38,10 @@ def captain_dashboard():
             db.or_(
                 db.and_(
                     Fixture.is_played == True,  # noqa: E712
-                    Result.id == None  # noqa: E712
+                    Result.id.is_(None)  # No result submitted yet
                 ),
                 db.and_(
-                    Result.id != None,  # noqa: E712
+                    Result.id.isnot(None),  # Result exists
                     Result.approved == False  # noqa: E712
                 )
             )

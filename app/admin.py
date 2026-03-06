@@ -49,13 +49,13 @@ def captain_dashboard():
 @admin_bp.route('/captain/submit-score/<int:fixture_id>', methods=['POST'])
 @role_required('captain')
 def submit_score(fixture_id):
-    """Submit a scorecard result. Restricted to Home Captain."""
+    """Submit a scorecard result. Allowed for captains of teams in current gameweek fixtures."""
     fixture = Fixture.query.get_or_404(fixture_id)
     user_team = Team.query.get(current_user.team_id)
 
-    # Restriction: Only home captain can submit
-    if not user_team or user_team.team_number != fixture.home_team_number:
-        flash('Only the HOME team captain can submit the scorecard.', 'danger')
+    # Restriction: Only captains of teams in this fixture can submit
+    if not user_team or user_team.team_number not in [fixture.home_team_number, fixture.away_team_number]:
+        flash('Only captains of teams in this fixture can submit the scorecard.', 'danger')
         return redirect(url_for('admin.captain_dashboard'))
 
     # Totals (can be used as fallback or overrides)

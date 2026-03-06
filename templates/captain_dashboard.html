@@ -96,6 +96,15 @@
                 fixture.result.total_away }})
                 {% if fixture.result.approved %}— <strong>Approved</strong>{% else %}— <em>Awaiting approval</em>{%
                 endif %}
+                <!-- show 180s / closes even when awaiting approval -->
+                {% if fixture.result.one_eighties_scored %}
+                <div style="margin-top:0.5rem;font-size:0.9rem;"><strong>180s:</strong> {{ fixture.result.one_eighties_scored }}</div>
+                {% endif %}
+                {% if fixture.result.highest_close_player %}
+                <div style="margin-top:0.25rem;font-size:0.9rem;"><strong>Highest Closures:</strong> {{ fixture.result.highest_close_player }}</div>
+                {% elif fixture.result.highest_close > 0 %}
+                <div style="margin-top:0.25rem;font-size:0.9rem;"><strong>Highest Close:</strong> {{ fixture.result.highest_close }}</div>
+                {% endif %}
             </div>
             {% set is_amendment = False %}
             {% endif %}
@@ -103,8 +112,7 @@
             {% set is_amendment = False %}
             {% endif %}
 
-            {% if (not fixture.result or (is_amendment and not fixture.result.approved)) and team.team_number ==
-            fixture.home_team_number %}
+            {% if (not fixture.result or (is_amendment and not fixture.result.approved)) and team.team_number in [fixture.home_team_number, fixture.away_team_number] %}
             <form method="POST" action="{{ url_for('admin.submit_score', fixture_id=fixture.id) }}"
                 class="scorecard-form" data-home-team="{{ home_team.name }}" data-away-team="{{ away_team.name }}">
 

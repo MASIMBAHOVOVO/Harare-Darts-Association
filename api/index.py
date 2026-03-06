@@ -3,7 +3,11 @@ import sys
 import os
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
+
+# Change working directory so Flask can resolve static/templates properly
+os.chdir(PROJECT_ROOT)
 
 from app import create_app
 

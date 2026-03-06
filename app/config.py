@@ -9,12 +9,14 @@ class Config:
     """Base configuration."""
     SECRET_KEY = os.environ.get('SECRET_KEY', 'hda-dev-secret-key-change-in-production')
 
-    # Use DATABASE_URL or POSTGRES_URL for MySQL/Postgres, fallback to SQLite for local dev
-    _uri = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
-    if _uri and _uri.startswith("postgres://"):
-        _uri = _uri.replace("postgres://", "postgresql://", 1)
+    database_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
     
-    SQLALCHEMY_DATABASE_URI = _uri or (
+    # SQLAlchemy 1.4+ requires 'postgresql://' instead of 'postgres://'
+    if database_url and database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    # Use DATABASE_URL env var for PostgreSQL, fallback to SQLite for local dev
+    SQLALCHEMY_DATABASE_URI = database_url or (
         'sqlite:///' + os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             'hda.db'

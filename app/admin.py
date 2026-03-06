@@ -30,11 +30,13 @@ def captain_dashboard():
         tn = user_team.team_number
         # Query for fixtures where user's team is participating and result is needed:
         # 1. Fixture was played (is_played=True) but no result submitted yet, OR
-        # 2. Result exists but not approved (pending admin approval)
+        # 2. Result exists but not approved (pending admin approval), OR
+        # 3. Gameweek date has passed but no approved result exists yet
+        today = datetime.now().date()
         query = Fixture.query.outerjoin(Result).outerjoin(GameWeek).filter(
             ((Fixture.home_team_number == tn) | (Fixture.away_team_number == tn)),
             Fixture.is_bye == False,  # noqa: E712
-            # Either match was played but no result, or result exists but not approved
+            # Show form if: match played & no result, OR result exists but not approved, OR gameweek date passed
             db.or_(
                 db.and_(
                     Fixture.is_played == True,  # noqa: E712
@@ -43,6 +45,14 @@ def captain_dashboard():
                 db.and_(
                     Result.id.isnot(None),  # Result exists
                     Result.approved == False  # noqa: E712
+                ),
+                db.and_(
+                    GameWeek.date.isnot(None),  # Has a date
+                    GameWeek.date < today,  # Date is in the past
+                    db.or_(
+                        Result.id.is_(None),  # No result submitted yet
+                        Result.approved == False  # Or result not approved
+                    )
                 )
             )
         ).order_by(GameWeek.week_number.desc(), Fixture.id.asc())

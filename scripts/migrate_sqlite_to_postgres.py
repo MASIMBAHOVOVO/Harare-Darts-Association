@@ -50,19 +50,35 @@ def migrate():
         SessionSQLite = sessionmaker(bind=sqlite_engine)
         sqlite_session = SessionSQLite()
 
-        # Reflect the tables so we can copy them dynamically without knowing model specifics
+        # Reflect the tables from both databases
         meta_sqlite = MetaData()
         meta_sqlite.reflect(bind=sqlite_engine)
         
         meta_postgres = MetaData()
         meta_postgres.reflect(bind=db.engine)
+
+        # List tables in dependency order (parent tables first, before child tables)
+        table_order = [
+            'users',
+            'teams',
+            'players',
+            'tournaments',
+            'seasons',
+            'game_weeks',
+            'fixtures',
+            'results',
+            'match_details',
+            'documents',
+            'committee',
+            'player_game_week_stats'
+        ]
         
-        # Copy data table by table to preserve foreign key order, roughly
-        # Or better yet, disable foreign key checks, copy all, enable.
-        # But we'll try straight copy first, or using models.
-        
-        # It's safest to copy table by table using core inserts since that includes standard schema structure
-        for table_name in meta_sqlite.tables:
+        # Copy data table by table in dependency order
+        for table_name in table_order:
+            if table_name not in meta_sqlite.tables:
+                print(f"Skipping table: {table_name} (not found in source)")
+                continue
+                
             sqlite_table = meta_sqlite.tables[table_name]
             postgres_table = meta_postgres.tables.get(table_name)
             

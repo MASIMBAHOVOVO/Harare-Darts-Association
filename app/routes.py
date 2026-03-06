@@ -114,13 +114,26 @@ def player_stats():
 
         stats = []
         for row in stats_query:
-            # Show empty string if they haven't played at all
-            best_co = row.best_checkout if row.total_games > 0 else ''
+            # use None for players with no games so we can push them after numeric values
+            if row.total_games > 0:
+                best_co = row.best_checkout
+            else:
+                best_co = None
             stats.append({
                 'name': row.name,
                 'team_name': row.team_name,
                 'best_checkout': best_co
             })
+
+        # sort: have numeric values first (descending) then blanks; tie-break on name
+        def sort_key(entry):
+            # numeric entries: has_value = 0, blanks: has_value = 1
+            has_value = 0 if entry['best_checkout'] is not None else 1
+            # for numeric we want reverse sort by value; for blanks value doesn't matter
+            val = entry['best_checkout'] if entry['best_checkout'] is not None else -1
+            return (has_value, -val, entry['name'])
+
+        stats.sort(key=sort_key)
 
         return render_template(
             'player_stats.html',

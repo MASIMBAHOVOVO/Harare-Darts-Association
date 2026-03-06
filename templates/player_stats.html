@@ -44,7 +44,7 @@
                         <tr class="{% if loop.index <= 3 %}top-three-row highlight-{{ loop.index }}{% endif %}">
                             <td><strong>{{ stat.name }}</strong></td>
                             <td>{{ stat.team_name or '' }}</td>
-                            <td class="highlight-col stat-value">{{ stat.best_checkout }}</td>
+                            <td class="highlight-col stat-value">{{ stat.best_checkout or 0 }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

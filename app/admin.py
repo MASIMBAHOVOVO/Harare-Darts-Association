@@ -408,9 +408,31 @@ def edit_player(player_id):
 @role_required('secretary_general')
 def delete_player(player_id):
     player = Player.query.get_or_404(player_id)
-    db.session.delete(player)
-    db.session.commit()
-    flash(f'Player "{player.name}" deleted.', 'success')
+    player_name = player.name
+    
+    # Clear any match detail references to this player
+    MatchDetail.query.filter(
+        db.or_(
+            MatchDetail.home_player1_id == player_id,
+            MatchDetail.home_player2_id == player_id,
+            MatchDetail.away_player1_id == player_id,
+            MatchDetail.away_player2_id == player_id
+        )
+    ).update({
+        MatchDetail.home_player1_id: None,
+        MatchDetail.home_player2_id: None,
+        MatchDetail.away_player1_id: None,
+        MatchDetail.away_player2_id: None
+    }, synchronize_session=False)
+    
+    try:
+        db.session.delete(player)
+        db.session.commit()
+        flash(f'Player "{player_name}" deleted successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting player: {str(e)}', 'danger')
+    
     return redirect(url_for('admin.secretary_dashboard'))
 
 

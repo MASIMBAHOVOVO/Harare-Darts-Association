@@ -31,7 +31,7 @@ def captain_dashboard():
         # Query for fixtures where user's team is participating and result is needed:
         # 1. Fixture was played (is_played=True) but no result submitted yet, OR
         # 2. Result exists but not approved (pending admin approval)
-        query = Fixture.query.outerjoin(Result).filter(
+        query = Fixture.query.outerjoin(Result).outerjoin(GameWeek).filter(
             ((Fixture.home_team_number == tn) | (Fixture.away_team_number == tn)),
             Fixture.is_bye == False,  # noqa: E712
             # Either match was played but no result, or result exists but not approved

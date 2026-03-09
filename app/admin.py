@@ -414,6 +414,11 @@ def edit_player(player_id):
 
     db.session.commit()
     flash(f'Player "{player.name}" updated.', 'success')
+    
+    # Redirect back to the page the user was on, or default to secretary dashboard
+    referrer = request.form.get('referrer')
+    if referrer:
+        return redirect(referrer)
     return redirect(url_for('admin.secretary_dashboard'))
 
 
@@ -422,6 +427,7 @@ def edit_player(player_id):
 def delete_player(player_id):
     player = Player.query.get_or_404(player_id)
     player_name = player.name
+    referrer = request.form.get('referrer')
     
     # Clear any match detail references to this player
     MatchDetail.query.filter(
@@ -446,6 +452,9 @@ def delete_player(player_id):
         db.session.rollback()
         flash(f'Error deleting player: {str(e)}', 'danger')
     
+    # Redirect back to the page the user was on, or default to secretary dashboard
+    if referrer:
+        return redirect(referrer)
     return redirect(url_for('admin.secretary_dashboard'))
 
 

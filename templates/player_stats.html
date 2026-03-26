@@ -68,6 +68,7 @@
                         <tr>
                             <th class="row-number-col">#</th>
                             <th class="wof-name-col">PLAYERS NAME</th>
+                            <th class="wof-club-col">Club Name</th>
                             {% for gw in range(1, max_gw + 1) %}
                             <th class="gw-col">GW{{ gw }}</th>
                             {% endfor %}
@@ -79,6 +80,7 @@
                         <tr class="{% if loop.index <= 3 %}top-three-row highlight-{{ loop.index }}{% endif %}">
                             <td class="row-number-col"><strong>{{ loop.index }}</strong></td>
                             <td class="wof-name-col"><strong>{{ p.name }}</strong></td>
+                            <td class="wof-club-col">{{ p.team_name }}</td>
                             {% for gw in range(1, max_gw + 1) %}
                             <td class="gw-col {% if p.gw_data.get(gw) %}has-value{% endif %}">{{ p.gw_data.get(gw, '')
                                 }}</td>

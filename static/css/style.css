@@ -2914,3 +2914,129 @@ code {
         font-size: 0.78rem;
     }
 }
+
+/* ==========================================================================
+   Wall of Fame Sticky Columns
+   ========================================================================== */
+/* We use border-collapse separate so sticky borders render nicely */
+.wof-gw-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.wof-gw-table th, .wof-gw-table td {
+    border-bottom: 1px solid var(--border-color);
+}
+.wof-gw-table thead th {
+    border-bottom: 2px solid var(--border-gold);
+}
+
+/* Base styles for sticky columns */
+.wof-gw-table {
+    --col1-w: 50px;
+    --col2-w: 220px;
+    --col3-w: 160px;
+    --col12-w: calc(var(--col1-w) + var(--col2-w));
+}
+
+@media (max-width: 768px) {
+    .wof-gw-table {
+        --col1-w: 40px;
+        --col2-w: 130px;
+        --col3-w: 100px;
+    }
+}
+
+.wof-gw-table th.row-number-col,
+.wof-gw-table td.row-number-col {
+    position: sticky;
+    left: 0;
+    z-index: 90 !important;
+    background-color: #0E2B20 !important;
+    width: var(--col1-w) !important;
+    min-width: var(--col1-w) !important;
+    max-width: var(--col1-w) !important;
+    box-sizing: border-box;
+}
+
+.wof-gw-table th.wof-name-col,
+.wof-gw-table td.wof-name-col {
+    position: sticky;
+    left: var(--col1-w);
+    z-index: 90 !important;
+    background-color: #0E2B20 !important;
+    width: var(--col2-w) !important;
+    min-width: var(--col2-w) !important;
+    max-width: var(--col2-w) !important;
+    box-sizing: border-box;
+}
+
+.wof-gw-table th.wof-club-col,
+.wof-gw-table td.wof-club-col {
+    position: sticky;
+    left: var(--col12-w);
+    z-index: 90 !important;
+    background-color: #0E2B20 !important;
+    width: var(--col3-w) !important;
+    min-width: var(--col3-w) !important;
+    max-width: var(--col3-w) !important;
+    box-sizing: border-box;
+}
+
+.wof-gw-table th.total-col,
+.wof-gw-table td.total-col {
+    position: sticky;
+    right: 0;
+    z-index: 90 !important;
+    background-color: #0E2B20 !important;
+    min-width: 70px !important;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.15);
+}
+
+.wof-gw-table th.total-col,
+.wof-gw-table td.total-col {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background-color: var(--dark-surface);
+    min-width: 70px;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.15); /* Subtle shadow denoting overlap */
+}
+
+/* Ensure header row stays above body content when scrolling vertical */
+.wof-gw-table thead th.row-number-col,
+.wof-gw-table thead th.wof-name-col,
+.wof-gw-table thead th.wof-club-col,
+.wof-gw-table thead th.total-col {
+    z-index: 95 !important;
+    background-color: #0E2B20 !important;
+}
+
+/* Backgrounds for top-3 highlighted rows so they remain opaque while sticky */
+.wof-gw-table tr.top-three-row td.row-number-col,
+.wof-gw-table tr.top-three-row td.wof-name-col,
+.wof-gw-table tr.top-three-row td.wof-club-col,
+.wof-gw-table tr.top-three-row td.total-col {
+    background-color: #1A3D2F !important;
+}
+
+.wof-gw-table tr.highlight-1 td.row-number-col,
+.wof-gw-table tr.highlight-1 td.wof-name-col,
+.wof-gw-table tr.highlight-1 td.wof-club-col,
+.wof-gw-table tr.highlight-1 td.total-col {
+    background-color: #213922 !important;
+}
+
+.wof-gw-table tr.highlight-2 td.row-number-col,
+.wof-gw-table tr.highlight-2 td.wof-name-col,
+.wof-gw-table tr.highlight-2 td.wof-club-col,
+.wof-gw-table tr.highlight-2 td.total-col {
+    background-color: #1d3729 !important;
+}
+
+.wof-gw-table tr.highlight-3 td.row-number-col,
+.wof-gw-table tr.highlight-3 td.wof-name-col,
+.wof-gw-table tr.highlight-3 td.wof-club-col,
+.wof-gw-table tr.highlight-3 td.total-col {
+    background-color: #1d3221 !important;
+}

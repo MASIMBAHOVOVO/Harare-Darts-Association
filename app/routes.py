@@ -89,7 +89,7 @@ def fixtures():
 def player_stats():
     """Wall of Fame — per game week stats with dropdown."""
     stat_type = request.args.get('stat', 'games_won')  # games_won, highest_checkout, most_180s
-    max_gw = 20
+    max_gw = 34  # show up to GW34 for both Games Won and Most 180s
 
     if stat_type == 'highest_checkout':
         # Aggregate best checkout per player across all GWs

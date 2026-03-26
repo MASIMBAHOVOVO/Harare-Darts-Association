@@ -2810,24 +2810,39 @@ code {
 .wof-table .wof-name-col,
 .wof-table .total-col {
     position: sticky;
-    z-index: 2;
     background: var(--dark-card);
+    z-index: 4;
 }
 
-.wof-table .row-number-col {
+.wof-table th.row-number-col,
+.wof-table td.row-number-col {
     left: 0;
+    z-index: 5;
+    background: rgba(19, 46, 35, 0.9);
+    border-right: 1px solid var(--border-gold);
 }
 
-.wof-table .wof-name-col {
-    left: 42px;
-    min-width: 170px;
+.wof-table th.wof-name-col,
+.wof-table td.wof-name-col {
+    left: 44px;
+    z-index: 5;
+    background: rgba(19, 46, 35, 0.9);
 }
 
-.wof-table .total-col {
+.wof-table th.total-col,
+.wof-table td.total-col {
     right: 0;
+    z-index: 5;
     text-align: center;
     background: rgba(197, 161, 59, 0.14);
 }
+
+.wof-table thead th.row-number-col,
+.wof-table thead th.wof-name-col,
+.wof-table thead th.total-col {
+    z-index: 7;
+}
+
 
 /* ---------- Horizontal Scroll Wrapper ---------- */
 .horizontal-scroll-wrapper {

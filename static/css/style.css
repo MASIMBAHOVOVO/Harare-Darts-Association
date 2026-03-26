@@ -2748,7 +2748,141 @@ code {
     color: var(--accent-gold);
 }
 
+
+/* ---------- Fixture Cards Layout ---------- */
+.fixtures-display-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+.fixtures-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    max-width: 900px;
+    width: 100%;
+}
+
+.fixture-card {
+    background: var(--dark-card);
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.fixture-card:hover {
+    background: var(--dark-card-hover);
+    border-color: var(--accent-gold);
+    box-shadow: var(--shadow-md);
+}
+
+.fixture-home-team,
+.fixture-away-team {
+    width: 100%;
+}
+
+.fixture-team-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+}
+
+.fixture-vs {
+    font-size: 0.9rem;
+    color: var(--accent-gold);
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin: 0.25rem 0;
+}
+
+.vs-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    background: var(--accent-gold);
+    color: var(--dark-bg);
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.fixture-result {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.score-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dark));
+    color: var(--dark-bg);
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.bye-badge {
+    display: inline-block;
+    background: rgba(197, 161, 59, 0.2);
+    color: var(--accent-gold);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.fixture-card .dash {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+}
+
+/* ---------- Row Number Column ---------- */
+.row-number-col {
+    min-width: 40px !important;
+    text-align: center !important;
+    background: rgba(197, 161, 59, 0.08) !important;
+    border-right: 1px solid var(--border-gold) !important;
+    font-weight: 600;
+    color: var(--accent-gold);
+}
+
+/* ---------- Horizontal Scroll Wrapper ---------- */
+.horizontal-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    border-radius: var(--radius-md);
+}
+
+.horizontal-scroll-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+
+.horizontal-scroll-wrapper::-webkit-scrollbar-track {
+    background: var(--dark-surface);
+}
+
+.horizontal-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: var(--accent-gold);
+    border-radius: 3px;
+}
+
+.horizontal-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-gold-light);
+}
+
 /* Responsive additions */
+
 @media (max-width: 768px) {
     .team-key-grid {
         grid-template-columns: 1fr 1fr;
@@ -2772,6 +2906,19 @@ code {
     .wof-name-col {
         min-width: 100px;
         font-size: 0.78rem;
+    }
+
+    .row-number-col {
+        min-width: 35px !important;
+    }
+
+    .fixtures-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .fixture-card {
+        padding: 1rem;
     }
 
     .gw-filter-bar {

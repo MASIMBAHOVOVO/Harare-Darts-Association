@@ -5,26 +5,12 @@
 <section class="page-header">
     <div class="container">
         <h1 class="page-title"><i class="fas fa-calendar-alt"></i> Fixtures & Results</h1>
-        <p class="page-subtitle">Weekly match schedules using team draw numbers</p>
+        <p class="page-subtitle">Weekly match schedules</p>
     </div>
 </section>
 
 <section class="section">
     <div class="container">
-        <!-- Team Number Key -->
-        {% if teams %}
-        <div class="team-key-section">
-            <h2 class="sub-title"><i class="fas fa-key"></i> Team Key</h2>
-            <div class="team-key-grid">
-                {% for team in teams %}
-                <div class="team-key-item">
-                    <span class="team-key-number">{{ team.team_number }}</span>
-                    <span class="team-key-name">{{ team.name }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
 
         <!-- Game Week Filter -->
         <div class="gw-filter-bar">
@@ -57,56 +43,43 @@
                 <span class="gw-status-badge {{ wd.game_week.status }}">{{ wd.game_week.status|capitalize }}</span>
             </h3>
             {% if wd.fixtures %}
-            <div class="fixtures-table-wrapper">
-                <table class="data-table fixtures-table">
-                    <thead>
-                        <tr>
-                            <th>Home</th>
-                            <th class="vs-col">vs</th>
-                            <th>Away</th>
-                            <th>Result</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for fixture in wd.fixtures %}
-                        <tr>
-                            <td class="fixture-team-num">
-                                <span class="team-num">{{ fixture.home_team_number }}</span>
-                                {% set ht = fixture.get_home_team() %}
-                                {% if ht %}<span class="team-label">{{ ht.name }}</span>{% endif %}
-                            </td>
-                            <td class="vs-col">
-                                {% if fixture.is_bye %}
-                                <span class="bye-badge">BYE</span>
-                                {% else %}
-                                <span class="vs-badge">v</span>
-                                {% endif %}
-                            </td>
-                            <td class="fixture-team-num">
-                                {% if not fixture.is_bye and fixture.away_team_number %}
-                                <span class="team-num">{{ fixture.away_team_number }}</span>
-                                {% set at = fixture.get_away_team() %}
-                                {% if at %}<span class="team-label">{{ at.name }}</span>{% endif %}
-                                {% else %}
-                                <span class="team-label">Bye</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if fixture.result and fixture.result.approved %}
-                                <span class="score-badge">{{ fixture.result.total_home }} - {{ fixture.result.total_away
-                                    }}</span>
-                                {% elif fixture.result %}
-                                <span class="badge pending">Submitted (Pending Approval)</span>
-                                {% elif wd.game_week.date and wd.game_week.date < today %} <span class="badge danger">
-                                    Pending Result</span>
-                                    {% else %}
-                                    <span class="dash">—</span>
-                                    {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="fixtures-display-wrapper">
+                <div class="fixtures-cards-grid">
+                    {% for fixture in wd.fixtures %}
+                    <div class="fixture-card">
+                        <div class="fixture-home-team">
+                            {% set ht = fixture.get_home_team() %}
+                            <span class="fixture-team-name">{{ ht.name if ht else 'Unknown' }}</span>
+                        </div>
+                        <div class="fixture-vs">
+                            {% if fixture.is_bye %}
+                            <span class="bye-badge">BYE</span>
+                            {% else %}
+                            <span class="vs-badge">vs</span>
+                            {% endif %}
+                        </div>
+                        <div class="fixture-away-team">
+                            {% if not fixture.is_bye and fixture.away_team_number %}
+                            {% set at = fixture.get_away_team() %}
+                            <span class="fixture-team-name">{{ at.name if at else 'Unknown' }}</span>
+                            {% else %}
+                            <span class="fixture-team-name">Bye</span>
+                            {% endif %}
+                        </div>
+                        <div class="fixture-result">
+                            {% if fixture.result and fixture.result.approved %}
+                            <span class="score-badge">{{ fixture.result.total_home }} - {{ fixture.result.total_away }}</span>
+                            {% elif fixture.result %}
+                            <span class="badge pending">Pending Approval</span>
+                            {% elif wd.game_week.date and wd.game_week.date < today %}
+                            <span class="badge danger">No Result</span>
+                            {% else %}
+                            <span class="dash">—</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
             {% else %}
             <div class="empty-state small">

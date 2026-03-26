@@ -2797,6 +2797,38 @@ code {
     color: var(--accent-gold);
 }
 
+.wof-table {
+    border-collapse: separate;
+}
+
+.wof-table thead th,
+.wof-table tbody td {
+    white-space: nowrap;
+}
+
+.wof-table .row-number-col,
+.wof-table .wof-name-col,
+.wof-table .total-col {
+    position: sticky;
+    z-index: 2;
+    background: var(--dark-card);
+}
+
+.wof-table .row-number-col {
+    left: 0;
+}
+
+.wof-table .wof-name-col {
+    left: 42px;
+    min-width: 170px;
+}
+
+.wof-table .total-col {
+    right: 0;
+    text-align: center;
+    background: rgba(197, 161, 59, 0.14);
+}
+
 /* ---------- Horizontal Scroll Wrapper ---------- */
 .horizontal-scroll-wrapper {
     overflow-x: auto;

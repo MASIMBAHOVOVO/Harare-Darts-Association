@@ -100,6 +100,9 @@
                 {% if fixture.result.one_eighties_scored %}
                 <div style="margin-top:0.5rem;font-size:0.9rem;"><strong>180s:</strong> {{ fixture.result.one_eighties_scored }}</div>
                 {% endif %}
+                {% if fixture.result.one_seventies_scored %}
+                <div style="margin-top:0.25rem;font-size:0.9rem;"><strong>171s:</strong> {{ fixture.result.one_seventies_scored }}</div>
+                {% endif %}
                 {% if fixture.result.highest_close_player %}
                 <div style="margin-top:0.25rem;font-size:0.9rem;"><strong>Highest Closures:</strong> {{ fixture.result.highest_close_player }}</div>
                 {% elif fixture.result.highest_close > 0 %}
@@ -112,7 +115,7 @@
             {% set is_amendment = False %}
             {% endif %}
 
-            {% if (not fixture.result or (is_amendment and not fixture.result.approved)) and team.team_number in [fixture.home_team_number, fixture.away_team_number] %}
+            {% if home_team and away_team and team.team_number == fixture.home_team_number and (not fixture.result or (is_amendment and not fixture.result.approved)) %}
             <form method="POST" action="{{ url_for('admin.submit_score', fixture_id=fixture.id) }}"
                 class="scorecard-form" data-home-team="{{ home_team.name }}" data-away-team="{{ away_team.name }}">
 
@@ -351,6 +354,13 @@
                             <label><i class="fas fa-circle-notch"></i> 180's SCORED (List player names)</label>
                             <textarea name="one_eighties_scored" rows="2" placeholder="e.g. John Smith, Mike Jones"
                                 class="form-textarea">{{ fixture.result.one_eighties_scored if is_amendment else '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-circle-notch"></i> 171's SCORED (List player names)</label>
+                            <textarea name="one_seventies_scored" rows="2" placeholder="e.g. John Smith, Mike Jones"
+                                class="form-textarea">{{ fixture.result.one_seventies_scored if is_amendment else '' }}</textarea>
                         </div>
                     </div>
                     <div class="form-row">

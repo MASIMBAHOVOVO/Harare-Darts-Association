@@ -88,8 +88,8 @@ def fixtures():
 @main_bp.route('/player-stats')
 def player_stats():
     """Wall of Fame — per game week stats with dropdown."""
-    stat_type = request.args.get('stat', 'games_won')  # games_won, highest_checkout, most_180s
-    max_gw = 34  # show up to GW34 for both Games Won and Most 180s
+    stat_type = request.args.get('stat', 'games_won')  # games_won, highest_checkout, most_180s, most_171s
+    max_gw = 34  # show up to GW34 for Games Won, Most 180s, and Most 171s
 
     if stat_type == 'highest_checkout':
         # Aggregate best checkout per player across all GWs
@@ -143,9 +143,11 @@ def player_stats():
             now=datetime.now()
         )
 
-    elif stat_type == 'most_180s':
+    elif stat_type in ('most_180s', 'most_171s'):
         # Get all players to ensure inclusive list
         all_players = Player.query.all()
+        stat_label = '180' if stat_type == 'most_180s' else '171'
+        stat_field = 'one_eighties' if stat_type == 'most_180s' else 'one_seventies'
 
         player_data = []
         for p in all_players:
@@ -154,8 +156,9 @@ def player_stats():
             games_played_total = 0
             for s in p.game_week_stats:
                 if s.games_played > 0:
-                    gw_data[s.game_week] = s.one_eighties
-                    total += s.one_eighties
+                    value = getattr(s, stat_field, 0) or 0
+                    gw_data[s.game_week] = value
+                    total += value
                     games_played_total += s.games_played
             
             # If a player hasn't played at all, make their total blank to match the template empty logic for visual blanks
@@ -174,6 +177,7 @@ def player_stats():
         return render_template(
             'player_stats.html',
             stat_type=stat_type,
+            stat_label=stat_label,
             player_data=player_data,
             max_gw=max_gw,
             now=datetime.now()

@@ -152,6 +152,12 @@
                             <span>{{ result.one_eighties_scored }}</span>
                         </div>
                         {% endif %}
+                        {% if result.one_seventies_scored %}
+                        <div class="scorecard-summary-row">
+                            <span class="scorecard-label">171s:</span>
+                            <span>{{ result.one_seventies_scored }}</span>
+                        </div>
+                        {% endif %}
                         {% if result.highest_close_player %}
                         <div class="scorecard-summary-row">
                             <span class="scorecard-label">Highest Closures:</span>
@@ -452,6 +458,7 @@
                                     <th>Played</th>
                                     <th>Won</th>
                                     <th>180s</th>
+                                    <th>171s</th>
                                     <th>High Checkout</th>
                                     <th>Delete</th>
                                 </tr>
@@ -499,6 +506,10 @@
                             <div class="form-group mini">
                                 <label>180s</label>
                                 <input type="number" name="one_eighties" min="0" value="0">
+                            </div>
+                            <div class="form-group mini">
+                                <label>171s</label>
+                                <input type="number" name="one_seventies" min="0" value="0">
                             </div>
                             <div class="form-group mini">
                                 <label>High Checkout</label>

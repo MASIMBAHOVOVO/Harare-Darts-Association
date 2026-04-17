@@ -3,6 +3,7 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from sqlalchemy import inspect, text
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -38,15 +39,30 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
 
-    # Create tables
+    # Create tables and ensure the latest columns exist
     with app.app_context():
         from app import models  # noqa: F401
         db.create_all()
+        _ensure_schema(app)
 
         # Create default admin users if they don't exist
         _seed_defaults(app)
 
     return app
+
+
+def _ensure_schema(app):
+    """Ensure schema additions are present in existing databases."""
+    inspector = inspect(db.engine)
+    with db.engine.begin() as conn:
+        if inspector.has_table('player_game_week_stats'):
+            existing = {col['name'] for col in inspector.get_columns('player_game_week_stats')}
+            if 'one_seventies' not in existing:
+                conn.execute(text('ALTER TABLE player_game_week_stats ADD COLUMN one_seventies INTEGER DEFAULT 0'))
+        if inspector.has_table('results'):
+            existing = {col['name'] for col in inspector.get_columns('results')}
+            if 'one_seventies_scored' not in existing:
+                conn.execute(text('ALTER TABLE results ADD COLUMN one_seventies_scored TEXT'))
 
 
 def _seed_defaults(app):

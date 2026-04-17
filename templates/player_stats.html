@@ -21,6 +21,7 @@
                     <option value="highest_checkout" {% if stat_type=='highest_checkout' %}selected{% endif %}>Highest
                         Checkouts</option>
                     <option value="most_180s" {% if stat_type=='most_180s' %}selected{% endif %}>Most 180s</option>
+                    <option value="most_171s" {% if stat_type=='most_171s' %}selected{% endif %}>Most 171s</option>
                 </select>
             </form>
         </div>
@@ -57,10 +58,10 @@
             {% endif %}
         </div>
 
-        {% elif stat_type == 'most_180s' %}
-        <!-- 180 Hits Per Game Week -->
+        {% elif stat_type in ['most_180s', 'most_171s'] %}
+        <!-- 180 / 171 Hits Per Game Week -->
         <div class="wof-section">
-            <h2 class="wof-table-title"><i class="fas fa-circle-notch"></i> 180 Hits Per Game Week</h2>
+            <h2 class="wof-table-title"><i class="fas fa-circle-notch"></i> {{ stat_label }} Hits Per Game Week</h2>
             {% if player_data %}
             <div class="table-wrapper horizontal-scroll-wrapper">
                 <table class="data-table wof-table wof-gw-table">
@@ -93,7 +94,7 @@
             </div>
             {% else %}
             <div class="empty-state small">
-                <p>No 180s recorded yet.</p>
+                <p>No {{ stat_label }}s recorded yet.</p>
             </div>
             {% endif %}
         </div>

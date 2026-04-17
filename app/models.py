@@ -102,6 +102,10 @@ class Player(db.Model):
         return sum(s.one_eighties for s in self.game_week_stats)
 
     @property
+    def total_one_seventies(self):
+        return sum(s.one_seventies for s in self.game_week_stats)
+
+    @property
     def best_highest_checkout(self):
         checkouts = [s.highest_checkout for s in self.game_week_stats if s.highest_checkout and s.highest_checkout > 0]
         return max(checkouts) if checkouts else 0
@@ -138,6 +142,7 @@ class PlayerGameWeekStats(db.Model):
     games_played = db.Column(db.Integer, default=0)
     games_won = db.Column(db.Integer, default=0)
     one_eighties = db.Column(db.Integer, default=0)
+    one_seventies = db.Column(db.Integer, default=0)
     highest_checkout = db.Column(db.Integer, default=0)
 
     def __repr__(self):
@@ -196,6 +201,7 @@ class Result(db.Model):
 
     # 180s and highest close
     one_eighties_scored = db.Column(db.Text, nullable=True)
+    one_seventies_scored = db.Column(db.Text, nullable=True)
     highest_close = db.Column(db.Integer, default=0)
     highest_close_player = db.Column(db.String(120), nullable=True)
 

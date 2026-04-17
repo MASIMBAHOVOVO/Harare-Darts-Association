@@ -90,8 +90,9 @@ def submit_score(fixture_id):
     total_home = request.form.get('total_home', 0, type=int)
     total_away = request.form.get('total_away', 0, type=int)
 
-    # 180s and highest close
+    # 180s, 171s, and highest close
     one_eighties_scored = request.form.get('one_eighties_scored', '').strip()
+    one_seventies_scored = request.form.get('one_seventies_scored', '').strip()
     highest_close = request.form.get('highest_close', 0, type=int)
     highest_close_player = request.form.get('highest_close_player', '').strip()
     notes = request.form.get('notes', '').strip()
@@ -107,6 +108,7 @@ def submit_score(fixture_id):
         result.total_home = total_home
         result.total_away = total_away
         result.one_eighties_scored = one_eighties_scored
+        result.one_seventies_scored = one_seventies_scored
         result.highest_close = highest_close
         result.highest_close_player = highest_close_player
         result.submitted_by = current_user.id
@@ -130,6 +132,7 @@ def submit_score(fixture_id):
             total_home=total_home,
             total_away=total_away,
             one_eighties_scored=one_eighties_scored,
+            one_seventies_scored=one_seventies_scored,
             highest_close=highest_close,
             highest_close_player=highest_close_player,
             submitted_by=current_user.id,
@@ -843,6 +846,20 @@ def approve_result(result_id):
                         db.session.add(stats)
                     stats.one_eighties = (stats.one_eighties or 0) + 1
 
+        # Update 171s from result.one_seventies_scored string if player names match
+        if result.one_seventies_scored:
+            names = [n.strip().lower() for n in result.one_seventies_scored.split(',') if n.strip()]
+            for name in names:
+                player = Player.query.filter(
+                    Player.name.ilike(f"%{name}%")
+                ).first()
+                if player:
+                    stats = PlayerGameWeekStats.query.filter_by(player_id=player.id, game_week=gw_num).first()
+                    if not stats:
+                        stats = PlayerGameWeekStats(player_id=player.id, game_week=gw_num)
+                        db.session.add(stats)
+                    stats.one_seventies = (stats.one_seventies or 0) + 1
+
     db.session.commit()
     flash('Result approved, standings and player stats updated automatically.', 'success')
     return redirect(url_for('admin.fixture_sec_dashboard'))
@@ -896,6 +913,7 @@ def update_player_stats(player_id):
     games_played = request.form.get('games_played', 0, type=int)
     games_won = request.form.get('games_won', 0, type=int)
     one_eighties = request.form.get('one_eighties', 0, type=int)
+    one_seventies = request.form.get('one_seventies', 0, type=int)
     highest_checkout = request.form.get('highest_checkout', 0, type=int)
 
     # Find or create stats for this GW
@@ -907,6 +925,7 @@ def update_player_stats(player_id):
         stats.games_played = games_played
         stats.games_won = games_won
         stats.one_eighties = one_eighties
+        stats.one_seventies = one_seventies
         stats.highest_checkout = highest_checkout
     else:
         stats = PlayerGameWeekStats(
@@ -915,6 +934,7 @@ def update_player_stats(player_id):
             games_played=games_played,
             games_won=games_won,
             one_eighties=one_eighties,
+            one_seventies=one_seventies,
             highest_checkout=highest_checkout
         )
         db.session.add(stats)

@@ -155,14 +155,14 @@ def player_stats():
             total = 0
             games_played_total = 0
             for s in p.game_week_stats:
-                if s.games_played > 0:
-                    value = getattr(s, stat_field, 0) or 0
+                value = getattr(s, stat_field, 0) or 0
+                if s.games_played > 0 or value > 0:
                     gw_data[s.game_week] = value
                     total += value
                     games_played_total += s.games_played
             
-            # If a player hasn't played at all, make their total blank to match the template empty logic for visual blanks
-            display_total = total if games_played_total > 0 else ''
+            # If a player has recorded any 180s/171s, show the total even with zero games_played.
+            display_total = total if (games_played_total > 0 or total > 0) else ''
             
             player_data.append({
                 'name': p.name,

@@ -63,6 +63,14 @@ class Team(db.Model):
     scores = db.Column(db.Integer, default=0)
     points = db.Column(db.Integer, default=0)
 
+    @property
+    def scores_against(self):
+        return (self.played * 39) - self.scores
+
+    @property
+    def scores_difference(self):
+        return self.scores - self.scores_against
+
     season_id = db.Column(db.Integer, db.ForeignKey('seasons.id'), nullable=True)
 
     players = db.relationship('Player', backref='team', lazy=True)
@@ -272,6 +280,10 @@ class Tournament(db.Model):
     venue = db.Column(db.String(200), nullable=True)
     description = db.Column(db.Text, nullable=True)
     is_upcoming = db.Column(db.Boolean, default=True)
+    tournament_type = db.Column(db.String(50), default='standard') # trials, doubles, individual, veterans_youth, standard
+    is_trials = db.Column(db.Boolean, default=False)
+    results = db.Column(db.Text, nullable=True)  # Plain text legacy results
+    results_data = db.Column(db.Text, nullable=True)  # Structured JSON results
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):

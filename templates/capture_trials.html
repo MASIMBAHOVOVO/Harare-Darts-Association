@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Capture Trial Results - {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-trophy"></i> Capture Trial Results</h1>
+        <p class="page-subtitle">{{ tournament.name }} — {{ tournament.date.strftime('%d %b %Y') }}</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <form method="POST" id="trials-form">
+            {% set categories = [
+                ('men', 'TRIAL FINAL RESULTS FOR MEN', 8),
+                ('women', 'TRIAL FINAL RESULTS FOR WOMEN', 6),
+                ('junior_men', 'TRIAL FINAL RESULTS FOR JUNIOR MEN (Under 25 Years)', 6),
+                ('junior_women', 'TRIAL FINAL RESULTS FOR JUNIOR WOMEN (Under 25 Years)', 6)
+            ] %}
+
+            {% for cat_id, cat_name, qual_count in categories %}
+            <div class="dashboard-card" style="margin-bottom: 2rem;">
+                <h3 class="sub-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fas fa-users"></i> {{ cat_name }}</span>
+                    <small class="text-muted" style="font-size: 0.8rem;">Top {{ qual_count }} Qualify</small>
+                </h3>
+                
+                <div class="table-wrapper">
+                    <table class="data-table" id="table-{{ cat_id }}">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Pos</th>
+                                <th>Player Name</th>
+                                <th style="width: 100px;">180s Hit</th>
+                                <th>Highest Closure(s)</th>
+                                <th style="width: 100px;">Total Pts</th>
+                                <th style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-{{ cat_id }}">
+                            <!-- Rows added by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addRow('{{ cat_id }}')">
+                        <i class="fas fa-plus"></i> Add Player
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                <a href="{{ url_for('admin.fixture_sec_dashboard', tab='tournaments') }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Save All Results</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const resultsData = {{ tournament.results_data|safe if tournament.results_data else '{}' }};
+
+    function addRow(catId, data = {}) {
+        const tbody = document.getElementById(`tbody-${catId}`);
+        const rowCount = tbody.rows.length;
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td><input type="number" name="${catId}_pos[]" value="${data.pos || rowCount + 1}" class="score-input-sm" required></td>
+            <td><input type="text" name="${catId}_name[]" value="${data.name || ''}" class="form-input" placeholder="Enter player name" required></td>
+            <td><input type="number" name="${catId}_one_eighties[]" value="${data.one_eighties || 0}" class="score-input-sm"></td>
+            <td><input type="text" name="${catId}_closures[]" value="${data.closures || ''}" class="form-input" placeholder="e.g. 142, 135"></td>
+            <td><input type="number" name="${catId}_points[]" value="${data.points || 0}" class="score-input-sm"></td>
+            <td>
+                <button type="button" class="btn btn-danger btn-xs" onclick="this.closest('tr').remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    }
+
+    // Initialize with existing data or one empty row per category
+    document.addEventListener('DOMContentLoaded', () => {
+        const cats = ['men', 'women', 'junior_men', 'junior_women'];
+        cats.forEach(catId => {
+            if (resultsData[catId] && resultsData[catId].length > 0) {
+                resultsData[catId].forEach(player => addRow(catId, player));
+            } else {
+                // Add 8 rows for men, 6 for others as initial placeholders
+                const initialCount = catId === 'men' ? 8 : 6;
+                for (let i = 0; i < initialCount; i++) {
+                    addRow(catId);
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

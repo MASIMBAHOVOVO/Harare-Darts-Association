@@ -1,8 +1,12 @@
 """Admin dashboard blueprint for the HDA website."""
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_file, current_app
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
+import pandas as pd
+from io import BytesIO
+import json
+from sqlalchemy import func
 from app import db
 from app.auth import role_required
 from app.models import (
@@ -479,9 +483,14 @@ def add_tournament():
         flash('Invalid date format.', 'danger')
         return redirect(url_for('admin.secretary_dashboard'))
 
+    results = request.form.get('results', '').strip()
+
     tournament = Tournament(
         name=name, date=date, venue=venue,
-        description=description, is_upcoming=True
+        description=description, results=results,
+        tournament_type=request.form.get('tournament_type', 'standard'),
+        is_upcoming=not bool(results), # Auto-mark as not upcoming if results exist
+        is_trials=(request.form.get('tournament_type') == 'trials')
     )
     db.session.add(tournament)
     db.session.commit()
@@ -502,6 +511,17 @@ def edit_tournament(tournament_id):
             pass
     tournament.venue = request.form.get('venue', tournament.venue or '').strip()
     tournament.description = request.form.get('description', tournament.description or '').strip()
+    tournament.results = request.form.get('results', tournament.results or '').strip()
+    
+    new_type = request.form.get('tournament_type')
+    if new_type:
+        tournament.tournament_type = new_type
+        tournament.is_trials = (new_type == 'trials')
+
+    # If results are entered, mark as not upcoming
+    if tournament.results or tournament.results_data:
+        tournament.is_upcoming = False
+    
     db.session.commit()
     flash(f'Tournament "{tournament.name}" updated.', 'success')
     return redirect(url_for('admin.secretary_dashboard') + '?tab=tournaments')
@@ -561,6 +581,246 @@ def add_user():
 
 
 # ---------------------------------------------------------------------------
+# Excel Export
+# ---------------------------------------------------------------------------
+@admin_bp.route('/export-league-data')
+@login_required
+def export_league_data():
+    """Export league standings, wall of fame, and clubs to a multi-sheet Excel file."""
+    if current_user.role not in ['fixture_secretary', 'secretary_general']:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.index'))
+
+    output = BytesIO()
+    
+    # Calculate max game weeks based on number of teams
+    num_teams = Team.query.count()
+    if num_teams > 0:
+        if num_teams % 2 == 0:
+            max_gw = (num_teams - 1) * 2
+        else:
+            max_gw = num_teams * 2
+    else:
+        max_gw = 0
+
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        # --- 1. LEAGUE STANDINGS ---
+        all_teams = Team.query.filter(Team.team_number.isnot(None)).all()
+        # Sort: Points (desc), then Scores (desc), then Scores Difference (desc)
+        teams_query = sorted(all_teams, key=lambda t: (t.points, t.scores, t.scores_difference), reverse=True)
+        standings_list = []
+        for i, t in enumerate(teams_query, 1):
+            standings_list.append({
+                'POSITION': i,
+                'TEAM': t.name,
+                'PLAYED': t.played,
+                'WON': t.won,
+                'LOST': t.lost,
+                'DOUBLES': t.doubles,
+                'SINGLES': t.singles,
+                'SCORES AGAINST': t.scores_against,
+                'SCORES DIFFERENCE': t.scores_difference,
+                'SCORES': t.scores,
+                'POINTS': t.points
+            })
+        df_standings = pd.DataFrame(standings_list)
+        df_standings.to_excel(writer, sheet_name='League Standings', index=False)
+
+        all_players = Player.query.all()
+
+        # Helper for grid-based stats
+        def build_gw_grid(stat_field):
+            data_list = []
+            for p in all_players:
+                total_val = sum((getattr(s, stat_field, 0) or 0) for s in p.game_week_stats)
+                if total_val > 0:
+                    row = {'Player': p.name, 'Club': p.team.name if p.team else ''}
+                    for s in p.game_week_stats:
+                        val = getattr(s, stat_field, 0) or 0
+                        if val > 0:
+                            row[f'GW{s.game_week}'] = val
+                    row['Total'] = total_val
+                    data_list.append(row)
+            
+            if not data_list:
+                return pd.DataFrame(columns=['Player', 'Club', 'Total'])
+            
+            df = pd.DataFrame(data_list)
+            cols = ['Player', 'Club']
+            existing_gws = sorted([c for c in df.columns if c.startswith('GW')], key=lambda x: int(x[2:]))
+            cols.extend(existing_gws)
+            cols.append('Total')
+            return df[cols].sort_values(by=['Total', 'Player'], ascending=[False, True])
+
+        # --- 2. GAMES WON (GRID) ---
+        df_gw = build_gw_grid('games_won')
+        df_gw.to_excel(writer, sheet_name='Games Won', index=False)
+
+        # --- 3. HIGHEST CLOSURES ---
+        hc_query = db.session.query(
+            Player.name,
+            Team.name.label('team_name'),
+            func.max(PlayerGameWeekStats.highest_checkout).label('highest_checkout')
+        ).join(PlayerGameWeekStats).join(Team, Player.team_id == Team.id).group_by(Player.id, Player.name, Team.name).filter(PlayerGameWeekStats.highest_checkout > 0).order_by(func.max(PlayerGameWeekStats.highest_checkout).desc()).all()
+        
+        df_hc = pd.DataFrame([{
+            'Player': r.name,
+            'Club': r.team_name,
+            'Highest Closure': r.highest_checkout
+        } for r in hc_query])
+        df_hc.to_excel(writer, sheet_name='Highest Closures', index=False)
+
+        # --- 4. MOST 180s (GRID) ---
+        df_180 = build_gw_grid('one_eighties')
+        df_180.to_excel(writer, sheet_name='Most 180s', index=False)
+
+        # --- 5. MOST 171s (GRID) ---
+        df_171 = build_gw_grid('one_seventies')
+        df_171.to_excel(writer, sheet_name='Most 171s', index=False)
+
+        # --- 6. REGISTERED CLUBS ---
+        clubs_list = [{
+            'Team Name': t.name,
+            'Captain': t.captain_name or '',
+            'Venue': t.venue_name or '',
+            'Phone': t.phone_number or ''
+        } for t in teams_query]
+        pd.DataFrame(clubs_list).to_excel(writer, sheet_name='Registered Clubs', index=False)
+
+        # --- Styling ---
+        workbook = writer.book
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        
+        # Website-inspired colors
+        hda_gold = 'C5A13B'
+        hda_dark_green = '002616'
+        hda_light_green = '003D24'
+        white = 'FFFFFF'
+        
+        # Header Style - Matches Website (Dark Green Background, Gold Text)
+        header_fill = PatternFill(start_color=hda_dark_green, end_color=hda_dark_green, fill_type='solid')
+        header_font = Font(color=hda_gold, bold=True) 
+        alignment = Alignment(horizontal='center', vertical='center')
+        border = Border(left=Side(style='thin', color='444444'), 
+                        right=Side(style='thin', color='444444'), 
+                        top=Side(style='thin', color='444444'), 
+                        bottom=Side(style='thin', color='444444'))
+
+        # Data Style
+        data_fill = PatternFill(start_color=hda_dark_green, end_color=hda_dark_green, fill_type='solid')
+        # Alternating row color (faintly lighter green)
+        alt_data_fill = PatternFill(start_color='002D1A', end_color='002D1A', fill_type='solid')
+        data_font = Font(color=white)
+        
+        # Color Accents
+        red_font = Font(color='E74C3C', bold=True)
+        green_font = Font(color='2ECC71', bold=True)
+        bold_gold_font = Font(color=hda_gold, bold=True)
+        bold_gold_underline_font = Font(color=hda_gold, bold=True, underline='single')
+        
+        # Top 3 Styles (used for Games Won, Highest Closures, etc.)
+        top_fills = [
+            PatternFill(start_color='004D2E', end_color='004D2E', fill_type='solid'), # Gold-ish green
+            PatternFill(start_color='003D24', end_color='003D24', fill_type='solid'), # Silver-ish green
+            PatternFill(start_color='00331D', end_color='00331D', fill_type='solid')  # Bronze-ish green
+        ]
+
+        for sheet in workbook.sheetnames:
+            ws = workbook[sheet]
+            
+            # Fill background
+            for r in range(1, 201):
+                for c in range(1, 25):
+                    ws.cell(row=r, column=c).fill = data_fill
+
+            # Style data rows
+            for row_idx in range(2, ws.max_row + 1):
+                is_alt = row_idx % 2 == 0
+                row_fill = alt_data_fill if is_alt else data_fill
+                for cell in ws[row_idx]:
+                    cell.fill = row_fill
+                    cell.font = data_font
+                    cell.border = border
+                    
+                    # Specific alignments
+                    if sheet == 'League Standings' and cell.column == 2: # TEAM
+                        cell.alignment = Alignment(horizontal='left', vertical='center')
+                    else:
+                        cell.alignment = alignment
+
+            # Style headers
+            for cell in ws[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = alignment
+                cell.border = border
+            
+            # Specialized styling for League Standings columns (matching Website)
+            if sheet == 'League Standings':
+                # POSITION:1, TEAM:2, PLAYED:3, WON:4, LOST:5, DOUBLES:6, SINGLES:7, SA:8, SD:9, SCORES:10, POINTS:11
+                for row_idx in range(2, ws.max_row + 1):
+                    # Style LOST (Col 5) and SCORES AGAINST (Col 8)
+                    for col_idx in [5, 8]:
+                        cell = ws.cell(row=row_idx, column=col_idx)
+                        cell.font = red_font
+                    
+                    # Style SCORES DIFFERENCE (Col 9)
+                    sd_cell = ws.cell(row=row_idx, column=9)
+                    try:
+                        val = int(sd_cell.value)
+                        if val > 0:
+                            sd_cell.font = green_font
+                        elif val < 0:
+                            sd_cell.font = red_font
+                    except:
+                        pass
+                    
+                    # Highlight POINTS (Col 11) with gold underline like website
+                    pts_cell = ws.cell(row=row_idx, column=11)
+                    pts_cell.font = bold_gold_underline_font
+
+                    # Position Badges (Col 1)
+                    if row_idx == 2: # Rank 1
+                        pos_cell = ws.cell(row=row_idx, column=1)
+                        pos_cell.fill = PatternFill(start_color='FFD700', end_color='FFD700', fill_type='solid') # Gold
+                        pos_cell.font = Font(color='000000', bold=True)
+                    elif row_idx == 3: # Rank 2
+                        pos_cell = ws.cell(row=row_idx, column=1)
+                        pos_cell.fill = PatternFill(start_color='C0C0C0', end_color='C0C0C0', fill_type='solid') # Silver
+                        pos_cell.font = Font(color='000000', bold=True)
+                    elif row_idx == 4: # Rank 3
+                        pos_cell = ws.cell(row=row_idx, column=1)
+                        pos_cell.fill = PatternFill(start_color='CD7F32', end_color='CD7F32', fill_type='solid') # Bronze
+                        pos_cell.font = Font(color='000000', bold=True)
+
+            # Style Top 3 Rows (excluding Registered Clubs and specialized Standings rows)
+            if sheet != 'Registered Clubs' and sheet != 'League Standings' and ws.max_row > 1:
+                for row_idx in range(2, min(5, ws.max_row + 1)):
+                    fill = top_fills[row_idx-2]
+                    for cell in ws[row_idx]:
+                        cell.fill = fill
+                        if cell.column == 1 or cell.column == ws.max_column: # Highlight Name and Total
+                            cell.font = bold_gold_font
+
+            # Auto-adjust column width
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    if cell.value:
+                        length = len(str(cell.value))
+                        if length > max_length:
+                            max_length = length
+                ws.column_dimensions[column].width = min(max_length + 2, 50)
+
+            # Gridlines are enabled by default
+
+    output.seek(0)
+    filename = f"HDA_League_Report_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+    return send_file(output, download_name=filename, as_attachment=True)
+
+
+# ---------------------------------------------------------------------------
 # Fixture Secretary Dashboard
 # ---------------------------------------------------------------------------
 @admin_bp.route('/fixture-secretary')
@@ -588,6 +848,9 @@ def fixture_sec_dashboard():
             Player.name.ilike(f'%{search_query}%')
         ).all()
 
+    # Tournaments
+    tournaments = Tournament.query.order_by(Tournament.date.desc()).all()
+
     return render_template(
         'fixture_sec_dashboard.html',
         teams=teams,
@@ -595,7 +858,8 @@ def fixture_sec_dashboard():
         game_weeks=game_weeks,
         pending_by_gw=pending_by_gw,
         search_query=search_query,
-        searched_players=searched_players
+        searched_players=searched_players,
+        tournaments=tournaments
     )
 
 
@@ -953,3 +1217,53 @@ def delete_player_stats(stats_id):
     db.session.commit()
     flash(f'Stats for "{player_name}" deleted.', 'success')
     return redirect(url_for('admin.fixture_sec_dashboard', player_search=player_name) + '&tab=player-stats')
+
+
+@admin_bp.route('/fixture-secretary/capture-trials/<int:tournament_id>', methods=['GET', 'POST'])
+@role_required('fixture_secretary')
+def capture_trials(tournament_id):
+    """Capture structured trial results for a tournament."""
+    from app.models import Tournament
+    tournament = Tournament.query.get_or_404(tournament_id)
+    
+    if request.method == 'POST':
+        data = {}
+        for cat in ['men', 'women', 'junior_men', 'junior_women']:
+            cat_results = []
+            positions = request.form.getlist(f'{cat}_pos[]')
+            names = request.form.getlist(f'{cat}_name[]')
+            one_eighties = request.form.getlist(f'{cat}_one_eighties[]')
+            closures = request.form.getlist(f'{cat}_closures[]')
+            points = request.form.getlist(f'{cat}_points[]')
+            
+            for i in range(len(names)):
+                if names[i].strip():
+                    try:
+                        pos_val = int(positions[i]) if positions[i] else i+1
+                        one_eighty_val = int(one_eighties[i]) if one_eighties[i] else 0
+                        points_val = int(points[i]) if points[i] else 0
+                    except (ValueError, TypeError):
+                        pos_val = i + 1
+                        one_eighty_val = 0
+                        points_val = 0
+                        
+                    cat_results.append({
+                        'pos': pos_val,
+                        'name': names[i].strip(),
+                        'one_eighties': one_eighty_val,
+                        'closures': closures[i].strip(),
+                        'points': points_val
+                    })
+            # Sort by position
+            cat_results.sort(key=lambda x: x['pos'])
+            data[cat] = cat_results
+        
+        tournament.results_data = json.dumps(data)
+        tournament.tournament_type = 'trials'
+        tournament.is_trials = True
+        tournament.is_upcoming = False  # Mark as completed when results are captured
+        db.session.commit()
+        flash(f'Results for "{tournament.name}" captured successfully.', 'success')
+        return redirect(url_for('admin.fixture_sec_dashboard', tab='tournaments'))
+
+    return render_template('capture_trials.html', tournament=tournament)

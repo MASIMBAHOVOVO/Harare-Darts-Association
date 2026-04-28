@@ -3,9 +3,12 @@
 
 {% block content %}
 <section class="page-header dashboard-header">
-    <div class="container">
-        <h1 class="page-title"><i class="fas fa-clipboard-list"></i> Fixture Secretary Dashboard</h1>
-        <p class="page-subtitle">Manage fixtures, approve results, update standings & player stats</p>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="page-title"><i class="fas fa-clipboard-list"></i> Fixture Secretary Dashboard</h1>
+            <p class="page-subtitle">Manage fixtures, approve results, update standings & player stats</p>
+        </div>
+        <a href="{{ url_for('admin.export_league_data') }}" class="btn btn-gold"><i class="fas fa-file-excel"></i> Download Full Report</a>
     </div>
 </section>
 
@@ -19,6 +22,7 @@
             <button class="dash-tab" data-tab="fixtures"><i class="fas fa-calendar-plus"></i> Fixtures</button>
             <button class="dash-tab" data-tab="standings"><i class="fas fa-table"></i> Standings</button>
             <button class="dash-tab" data-tab="player-stats"><i class="fas fa-chart-line"></i> Player Stats</button>
+            <button class="dash-tab" data-tab="tournaments"><i class="fas fa-trophy"></i> Tournaments</button>
         </div>
 
         <!-- ========== PENDING RESULTS TAB ========== -->
@@ -531,6 +535,72 @@
             <div class="empty-state small" style="margin-top:1rem;">
                 <i class="fas fa-search fa-2x"></i>
                 <p>Search for a player above to update their game week stats.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ========== TOURNAMENTS TAB ========== -->
+        <div class="dash-panel" id="tournaments">
+            <h2 class="sub-title"><i class="fas fa-trophy"></i> Capture Tournament Results</h2>
+            <p class="text-muted" style="margin-bottom:1.5rem;">Manage upcoming tournaments and capture structured results for Trials.</p>
+
+            {% if tournaments %}
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tournament Name</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in tournaments %}
+                        <tr>
+                            <td><strong>{{ t.name }}</strong></td>
+                            <td>{{ t.date.strftime('%d %b %Y') }}</td>
+                            <td>
+                                {% if t.tournament_type == 'trials' %}
+                                <span class="badge" style="background: var(--accent-gold); color: #000;">Trials</span>
+                                {% elif t.tournament_type == 'doubles' %}
+                                <span class="badge" style="background: #3498db;">Doubles</span>
+                                {% elif t.tournament_type == 'individual' %}
+                                <span class="badge" style="background: #9b59b6;">Individual</span>
+                                {% elif t.tournament_type == 'veterans_youth' %}
+                                <span class="badge" style="background: #e67e22;">Veterans & Youth</span>
+                                {% else %}
+                                <span class="badge" style="background: var(--bg-card); border: 1px solid var(--border-gold);">Standard</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if t.is_upcoming %}
+                                <span class="badge" style="background: #27ae60;">Upcoming</span>
+                                {% else %}
+                                <span class="badge" style="background: var(--bg-card); color: var(--text-muted);">Completed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    {% if t.tournament_type == 'trials' %}
+                                    <a href="{{ url_for('admin.capture_trials', tournament_id=t.id) }}" class="btn btn-gold btn-xs">
+                                        <i class="fas fa-edit"></i> Capture Trials
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted small">Standard Capture (Coming Soon)</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <i class="fas fa-trophy fa-2x"></i>
+                <p>No tournaments found. Ask the Secretary General to create one first.</p>
             </div>
             {% endif %}
         </div>

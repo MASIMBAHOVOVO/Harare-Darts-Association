@@ -37,6 +37,9 @@
                 <li><a href="{{ url_for('main.player_stats') }}"
                         class="nav-link {% if request.endpoint == 'main.player_stats' %}active{% endif %}"><i
                             class="fas fa-star"></i> Wall of Fame</a></li>
+                <li><a href="{{ url_for('main.tournament_results') }}"
+                        class="nav-link {% if request.endpoint == 'main.tournament_results' %}active{% endif %}"><i
+                            class="fas fa-medal"></i> Tournament Results</a></li>
                 <li><a href="{{ url_for('main.venues') }}"
                         class="nav-link {% if request.endpoint == 'main.venues' %}active{% endif %}"><i
                             class="fas fa-map-marker-alt"></i> Venues</a></li>
@@ -96,6 +99,7 @@
                     <li><a href="{{ url_for('main.standings') }}">League Standings</a></li>
                     <li><a href="{{ url_for('main.fixtures') }}">Fixtures & Results</a></li>
                     <li><a href="{{ url_for('main.player_stats') }}">Player Stats</a></li>
+                    <li><a href="{{ url_for('main.tournament_results') }}">Tournament Results</a></li>
                     <li><a href="{{ url_for('main.venues') }}">Venues</a></li>
                 </ul>
             </div>

@@ -23,6 +23,8 @@
                         <th class="standings-lost">Lost</th>
                         <th class="standings-doubles">DOUBLES</th>
                         <th class="standings-singles">SINGLES</th>
+                        <th class="standings-lost">SCORES AGAINST</th>
+                        <th class="standings-scores">SCORES DIFFERENCE</th>
                         <th class="standings-scores">Scores</th>
                         <th class="standings-points">Points</th>
                     </tr>
@@ -47,6 +49,10 @@
                         <td class="standings-lost-cell">{{ team.lost }}</td>
                         <td>{{ team.doubles }}</td>
                         <td>{{ team.singles }}</td>
+                        <td class="standings-lost-cell">{{ team.scores_against }}</td>
+                        <td style="color: {% if team.scores_difference > 0 %}#2ecc71{% elif team.scores_difference < 0 %}#e74c3c{% else %}inherit{% endif %}; font-weight: 600;">
+                            {{ team.scores_difference }}
+                        </td>
                         <td class="standings-scores-cell">{{ team.scores }}</td>
                         <td class="standings-points-cell"><strong><u>{{ team.points }}</u></strong></td>
                     </tr>

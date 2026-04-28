@@ -63,6 +63,16 @@ def _ensure_schema(app):
             existing = {col['name'] for col in inspector.get_columns('results')}
             if 'one_seventies_scored' not in existing:
                 conn.execute(text('ALTER TABLE results ADD COLUMN one_seventies_scored TEXT'))
+        if inspector.has_table('tournaments'):
+            existing = {col['name'] for col in inspector.get_columns('tournaments')}
+            if 'results' not in existing:
+                conn.execute(text('ALTER TABLE tournaments ADD COLUMN results TEXT'))
+            if 'is_trials' not in existing:
+                conn.execute(text('ALTER TABLE tournaments ADD COLUMN is_trials BOOLEAN DEFAULT FALSE'))
+            if 'results_data' not in existing:
+                conn.execute(text('ALTER TABLE tournaments ADD COLUMN results_data TEXT'))
+            if 'tournament_type' not in existing:
+                conn.execute(text("ALTER TABLE tournaments ADD COLUMN tournament_type VARCHAR(50) DEFAULT 'standard'"))
 
 
 def _seed_defaults(app):

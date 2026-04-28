@@ -1,6 +1,7 @@
 """Public routes for the HDA website."""
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, url_for, redirect
 from datetime import datetime
+from app import db
 from app.models import (
     Tournament, Team, Fixture, Player, Document, Committee,
     GameWeek, PlayerGameWeekStats
@@ -20,11 +21,9 @@ def home():
 @main_bp.route('/standings')
 def standings():
     """League standings table — Position, Team, Played, Won, Lost, Doubles, Singles, Scores, Points."""
-    teams = Team.query.filter(Team.team_number.isnot(None)).order_by(
-        Team.points.desc(),
-        Team.scores.desc(),
-        Team.won.desc()
-    ).all()
+    all_teams = Team.query.filter(Team.team_number.isnot(None)).all()
+    # Sort: Points (desc), then Scores (desc), then Scores Difference (desc)
+    teams = sorted(all_teams, key=lambda t: (t.points, t.scores, t.scores_difference), reverse=True)
     return render_template('standings.html', teams=teams, now=datetime.now())
 
 
@@ -89,7 +88,17 @@ def fixtures():
 def player_stats():
     """Wall of Fame — per game week stats with dropdown."""
     stat_type = request.args.get('stat', 'games_won')  # games_won, highest_checkout, most_180s, most_171s
-    max_gw = 34  # show up to GW34 for Games Won, Most 180s, and Most 171s
+    
+    # Calculate max game weeks based on number of teams (each team plays all others twice)
+    from app.models import Team
+    num_teams = Team.query.count()
+    if num_teams > 0:
+        if num_teams % 2 == 0:
+            max_gw = (num_teams - 1) * 2
+        else:
+            max_gw = num_teams * 2
+    else:
+        max_gw = 34 # Fallback
 
     if stat_type == 'highest_checkout':
         # Aggregate best checkout per player across all GWs
@@ -242,8 +251,21 @@ def documents():
 @main_bp.route('/about')
 def about():
     """About page with committee information."""
+    from app.models import Committee
     members = Committee.query.order_by(Committee.display_order.asc()).all()
     return render_template('about.html', members=members)
+
+
+@main_bp.route('/tournament-results')
+def tournament_results():
+    """Page to view results of tournaments."""
+    all_tournaments = Tournament.query.all()
+    # Sort: Completed (results exists) first, then by date ascending
+    # (0 if results else 1) ensures completed are 0 (first), pending are 1 (second)
+    all_tournaments.sort(key=lambda t: (0 if t.results else 1, t.date))
+    return render_template('tournament_results.html', tournaments=all_tournaments)
+
+
 @main_bp.route('/view-minute/<int:doc_id>')
 def view_minute(doc_id):
     """View typed AGM minutes."""

@@ -27,8 +27,8 @@
                         <i class="fas fa-trophy"></i>
                     </div>
                     
-                    <div class="status-indicator {% if tournament.results %}completed{% else %}pending{% endif %}">
-                        {% if tournament.results %}
+                    <div class="status-indicator {% if tournament.results or tournament.results_data %}completed{% else %}pending{% endif %}">
+                        {% if tournament.results or tournament.results_data %}
                             <i class="fas fa-check-circle"></i> COMPLETED
                         {% else %}
                             <i class="fas fa-clock"></i> PENDING
@@ -44,7 +44,7 @@
                         {% endif %}
                     </div>
 
-                    {% if not tournament.results %}
+                    {% if not tournament.results and not tournament.results_data %}
                     <div class="countdown" data-target="{{ tournament.date.isoformat() }}">
                         <div class="countdown-item">
                             <span class="countdown-value days">--</span>

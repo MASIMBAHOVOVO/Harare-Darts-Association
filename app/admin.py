@@ -1267,3 +1267,19 @@ def capture_trials(tournament_id):
         return redirect(url_for('admin.fixture_sec_dashboard', tab='tournaments'))
 
     return render_template('capture_trials.html', tournament=tournament)
+
+
+@admin_bp.route('/fixture-secretary/clear-tournament-results/<int:tournament_id>', methods=['POST'])
+@role_required('fixture_secretary')
+def clear_tournament_results(tournament_id):
+    """Clear captured results and move tournament back to upcoming."""
+    from app.models import Tournament
+    tournament = Tournament.query.get_or_404(tournament_id)
+    
+    tournament.results_data = None
+    tournament.results = None
+    tournament.is_upcoming = True
+    
+    db.session.commit()
+    flash(f'Results for "{tournament.name}" have been cleared and the tournament is now marked as upcoming.', 'info')
+    return redirect(url_for('admin.fixture_sec_dashboard', tab='tournaments'))

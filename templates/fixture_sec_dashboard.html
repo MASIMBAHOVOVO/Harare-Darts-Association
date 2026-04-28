@@ -582,13 +582,22 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div style="display: flex; gap: 0.5rem;">
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     {% if t.tournament_type == 'trials' %}
                                     <a href="{{ url_for('admin.capture_trials', tournament_id=t.id) }}" class="btn btn-gold btn-xs">
-                                        <i class="fas fa-edit"></i> Capture Trials
+                                        <i class="fas fa-edit"></i> {{ 'Edit Results' if not t.is_upcoming else 'Capture Trials' }}
                                     </a>
                                     {% else %}
                                     <span class="text-muted small">Standard Capture (Coming Soon)</span>
+                                    {% endif %}
+
+                                    {% if not t.is_upcoming %}
+                                    <form method="POST" action="{{ url_for('admin.clear_tournament_results', tournament_id=t.id) }}" 
+                                          style="display: inline;" onsubmit="return confirm('Are you sure you want to CLEAR all results for this tournament? This will move it back to the Upcoming list.')">
+                                        <button type="submit" class="btn btn-danger btn-xs" title="Clear Results and Move to Upcoming">
+                                            <i class="fas fa-undo"></i> Clear
+                                        </button>
+                                    </form>
                                     {% endif %}
                                 </div>
                             </td>

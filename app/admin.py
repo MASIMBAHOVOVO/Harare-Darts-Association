@@ -55,7 +55,7 @@ def captain_dashboard():
                 ),
                 db.and_(
                     GameWeek.date.isnot(None),  # Has a date
-                    GameWeek.date < today,  # Date is in the past
+                    GameWeek.date <= today,  # Date is in the past
                     db.or_(
                         Result.id.is_(None),  # No result submitted yet
                         Result.approved == False  # Or result not approved

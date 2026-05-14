@@ -27,6 +27,9 @@ def captain_dashboard():
     """Captain dashboard — view fixtures and submit scorecard results."""
     user_team = current_user.team
     game_weeks = GameWeek.query.order_by(GameWeek.week_number.asc()).all()
+    # Determine the current game week for approved-results view
+    current_gw = GameWeek.query.filter_by(status='current').first()
+    current_gw = GameWeek.query.filter_by(status='current').first()
     current_gw = GameWeek.query.filter_by(status='current').first()
 
     pending_fixtures = []
@@ -41,7 +44,7 @@ def captain_dashboard():
         query = Fixture.query.outerjoin(Result).outerjoin(
             GameWeek, GameWeek.id == Fixture.game_week_id
         ).filter(
-            ((Fixture.home_team_number == tn) | (Fixture.away_team_number == tn)),
+            (Fixture.home_team_number == tn),
             Fixture.is_bye == False,  # noqa: E712
             # Show form if: match played & no result, OR result exists but not approved, OR gameweek date passed
             db.or_(
@@ -55,7 +58,7 @@ def captain_dashboard():
                 ),
                 db.and_(
                     GameWeek.date.isnot(None),  # Has a date
-                    GameWeek.date < today,  # Date is in the past
+                    GameWeek.date <= today,  # Date is today or in the past
                     db.or_(
                         Result.id.is_(None),  # No result submitted yet
                         Result.approved == False  # Or result not approved
@@ -81,9 +84,9 @@ def submit_score(fixture_id):
     fixture = Fixture.query.get_or_404(fixture_id)
     user_team = Team.query.get(current_user.team_id)
 
-    # Restriction: Only captains of teams in this fixture can submit
-    if not user_team or user_team.team_number not in [fixture.home_team_number, fixture.away_team_number]:
-        flash('Only captains of teams in this fixture can submit the scorecard.', 'danger')
+    # Restriction: Only the home captain may submit or amend the scorecard
+    if not user_team or user_team.team_number != fixture.home_team_number:
+        flash('Only the home captain can submit the scorecard.', 'danger')
         return redirect(url_for('admin.captain_dashboard'))
 
     # Totals (can be used as fallback or overrides)
@@ -211,11 +214,106 @@ def decline_result(result_id):
     """Decline a submitted scorecard result."""
     result = Result.query.get_or_404(result_id)
     reason = request.form.get('decline_reason', '').strip()
+    fixture = result.fixture
 
-    if result.approved:
-        flash('Cannot decline an already approved result.', 'danger')
-        return redirect(url_for('admin.fixture_sec_dashboard'))
+    # If the result was already approved, roll back its effects on standings and player stats
+    if result.approved or result.status == 'approved':
+        # Revert fixture played flag
+        if fixture:
+            fixture.is_played = False
 
+        # Revert team-level standings
+        home_team = fixture.get_home_team() if fixture else None
+        away_team = fixture.get_away_team() if fixture else None
+
+        if home_team and away_team:
+            home_team.played = max((home_team.played or 0) - 1, 0)
+            away_team.played = max((away_team.played or 0) - 1, 0)
+
+            home_team.doubles = max((home_team.doubles or 0) - (result.pairs_home_subtotal or 0), 0)
+            away_team.doubles = max((away_team.doubles or 0) - (result.pairs_away_subtotal or 0), 0)
+            home_team.singles = max((home_team.singles or 0) - (result.singles_home_total or 0), 0)
+            away_team.singles = max((away_team.singles or 0) - (result.singles_away_total or 0), 0)
+            home_team.scores = max((home_team.scores or 0) - (result.total_home or 0), 0)
+            away_team.scores = max((away_team.scores or 0) - (result.total_away or 0), 0)
+
+            # Reverse win/loss/points
+            if result.total_home > result.total_away:
+                home_team.won = max((home_team.won or 0) - 1, 0)
+                home_team.points = max((home_team.points or 0) - 3, 0)
+                away_team.lost = max((away_team.lost or 0) - 1, 0)
+            elif result.total_away > result.total_home:
+                away_team.won = max((away_team.won or 0) - 1, 0)
+                away_team.points = max((away_team.points or 0) - 3, 0)
+                home_team.lost = max((home_team.lost or 0) - 1, 0)
+            else:
+                # Draw — both had 1 point
+                home_team.points = max((home_team.points or 0) - 1, 0)
+                away_team.points = max((away_team.points or 0) - 1, 0)
+
+        # Revert player-level stats added during approval
+        gw_num = fixture.game_week.week_number if fixture and fixture.game_week else None
+        if gw_num is not None:
+            for md in result.match_details:
+                # For singles, we previously incremented games_played and games_won (legs)
+                if md.match_type == 'single':
+                    if md.home_player1_id:
+                        stats = PlayerGameWeekStats.query.filter_by(player_id=md.home_player1_id, game_week=gw_num).first()
+                        if stats:
+                            stats.games_played = max((stats.games_played or 0) - 1, 0)
+                            stats.games_won = max((stats.games_won or 0) - (md.home_legs_won or 0), 0)
+                    if md.away_player1_id:
+                        stats = PlayerGameWeekStats.query.filter_by(player_id=md.away_player1_id, game_week=gw_num).first()
+                        if stats:
+                            stats.games_played = max((stats.games_played or 0) - 1, 0)
+                            stats.games_won = max((stats.games_won or 0) - (md.away_legs_won or 0), 0)
+                else:
+                    # For pairs, reduce games_played for each player recorded
+                    for pid in [md.home_player1_id, md.home_player2_id, md.away_player1_id, md.away_player2_id]:
+                        if pid:
+                            stats = PlayerGameWeekStats.query.filter_by(player_id=pid, game_week=gw_num).first()
+                            if stats:
+                                stats.games_played = max((stats.games_played or 0) - 1, 0)
+
+            # Revert one-eighty and 171 tallies by parsing the stored strings
+            if result.one_eighties_scored:
+                names = [n.strip() for n in result.one_eighties_scored.split(',') if n.strip()]
+                for name in names:
+                    player = Player.query.filter(Player.name.ilike(f"%{name}%")).first()
+                    if player:
+                        stats = PlayerGameWeekStats.query.filter_by(player_id=player.id, game_week=gw_num).first()
+                        if stats:
+                            stats.one_eighties = max((stats.one_eighties or 0) - 1, 0)
+
+            if result.one_seventies_scored:
+                names = [n.strip() for n in result.one_seventies_scored.split(',') if n.strip()]
+                for name in names:
+                    player = Player.query.filter(Player.name.ilike(f"%{name}%")).first()
+                    if player:
+                        stats = PlayerGameWeekStats.query.filter_by(player_id=player.id, game_week=gw_num).first()
+                        if stats:
+                            stats.one_seventies = max((stats.one_seventies or 0) - 1, 0)
+
+            # Revert highest close if it matches the recorded value
+            if result.highest_close_player:
+                parts = [p.strip() for p in result.highest_close_player.split(',') if p.strip()]
+                for part in parts:
+                    p_name_query = part
+                    score_val = result.highest_close or 0
+                    if '*' in part:
+                        try:
+                            p_name_query, p_score = [s.strip() for s in part.split('*')]
+                            score_val = int(p_score)
+                        except (ValueError, IndexError):
+                            continue
+
+                    player = Player.query.filter(Player.name.ilike(f"%{p_name_query}%")).first()
+                    if player:
+                        stats = PlayerGameWeekStats.query.filter_by(player_id=player.id, game_week=gw_num).first()
+                        if stats and (stats.highest_checkout or 0) == score_val:
+                            stats.highest_checkout = 0
+
+    # Mark declined and clear approval
     result.status = 'declined'
     result.approved = False
     result.decline_reason = reason
@@ -831,8 +929,8 @@ def fixture_sec_dashboard():
     players = Player.query.order_by(Player.name).all()
     game_weeks = GameWeek.query.order_by(GameWeek.week_number.asc()).all()
 
-    # Pending results grouped by game week
-    pending_results = Result.query.filter_by(approved=False).all()
+    # Pending results grouped by game week (exclude results that have been declined and returned to captains)
+    pending_results = Result.query.filter(Result.approved == False, Result.status != 'declined').all()
     pending_by_gw = {}
     for r in pending_results:
         gw_num = r.game_week.week_number if r.game_week else 0
@@ -851,6 +949,19 @@ def fixture_sec_dashboard():
     # Tournaments
     tournaments = Tournament.query.order_by(Tournament.date.desc()).all()
 
+    # Approved results for current and two previous game weeks
+    approved_by_gw = {}
+    current_gw_local = GameWeek.query.filter_by(status='current').first()
+    if current_gw_local:
+        gw_nums = [n for n in [current_gw_local.week_number, current_gw_local.week_number - 1, current_gw_local.week_number - 2] if n > 0]
+        if gw_nums:
+            approved_results = Result.query.join(GameWeek).filter(Result.approved == True, GameWeek.week_number.in_(gw_nums)).all()
+            for r in approved_results:
+                gw_num = r.game_week.week_number if r.game_week else 0
+                if gw_num not in approved_by_gw:
+                    approved_by_gw[gw_num] = []
+                approved_by_gw[gw_num].append(r)
+
     return render_template(
         'fixture_sec_dashboard.html',
         teams=teams,
@@ -859,7 +970,8 @@ def fixture_sec_dashboard():
         pending_by_gw=pending_by_gw,
         search_query=search_query,
         searched_players=searched_players,
-        tournaments=tournaments
+        tournaments=tournaments,
+        approved_by_gw=approved_by_gw
     )
 
 
@@ -881,6 +993,17 @@ def assign_team_number(team_id):
     db.session.commit()
     flash(f'Team "{team.name}" assigned number {number}.', 'success')
     return redirect(url_for('admin.fixture_sec_dashboard'))
+
+
+@admin_bp.route('/result/<int:result_id>')
+@role_required('fixture_secretary', 'secretary_general')
+def view_result(result_id):
+    """View a single scorecard/result in full detail."""
+    result = Result.query.get_or_404(result_id)
+    fixture = result.fixture
+    home_team = fixture.get_home_team() if fixture else None
+    away_team = fixture.get_away_team() if fixture else None
+    return render_template('view_result.html', result=result, fixture=fixture, home_team=home_team, away_team=away_team)
 
 
 @admin_bp.route('/fixture-secretary/add-game-week', methods=['POST'])

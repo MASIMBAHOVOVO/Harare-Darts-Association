@@ -17,6 +17,7 @@
         <!-- Dashboard Tabs -->
         <div class="dash-tabs">
             <button class="dash-tab active" data-tab="pending"><i class="fas fa-clock"></i> Pending Results</button>
+            <button class="dash-tab" data-tab="approved"><i class="fas fa-check-circle"></i> Approved Results</button>
             <button class="dash-tab" data-tab="team-numbers"><i class="fas fa-sort-numeric-down"></i> Team
                 Numbers</button>
             <button class="dash-tab" data-tab="fixtures"><i class="fas fa-calendar-plus"></i> Fixtures</button>
@@ -196,6 +197,52 @@
             <div class="empty-state small">
                 <i class="fas fa-check-circle fa-2x"></i>
                 <p>No pending results to approve.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ========== APPROVED RESULTS TAB ========== -->
+        <div class="dash-panel" id="approved">
+            <h2 class="sub-title"><i class="fas fa-check-circle"></i> Approved Results (Current + 2 Previous GWs)</h2>
+
+            {% if approved_by_gw %}
+            {% for gw_num, results in approved_by_gw|dictsort %}
+            <div class="gw-pending-group">
+                <h3 class="gw-heading"><span class="gw-badge">Game Week {{ gw_num }}</span></h3>
+                {% for result in results %}
+                {% set fixture = result.fixture %}
+                {% set home_team = fixture.get_home_team() %}
+                {% set away_team = fixture.get_away_team() %}
+                <div class="dashboard-card scorecard-card">
+                    <h4>
+                        <span class="team-num">{{ fixture.home_team_number }}</span> {{ home_team.name if home_team else '?' }}
+                        <span class="vs-badge">vs</span>
+                        <span class="team-num">{{ fixture.away_team_number or 'Bye' }}</span> {{ away_team.name if away_team else '' }}
+                    </h4>
+                    <p class="result-submitter"><i class="fas fa-user"></i> Submitted by {{ result.submitter.full_name if result.submitter else 'Unknown' }} — {{ result.submitted_at.strftime('%d %b %Y %H:%M') }}</p>
+
+                    <div class="scorecard-summary">
+                        <div class="scorecard-summary-row total-row">
+                            <span class="scorecard-label">TOTAL:</span>
+                            <span class="score-badge">{{ result.total_home }} - {{ result.total_away }}</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+                        <form method="POST" action="{{ url_for('admin.decline_result', result_id=result.id) }}" onsubmit="return confirm('Decline this approved result and revert updates?')">
+                            <input type="hidden" name="decline_reason" value="Declined by Fixture Secretary">
+                            <button type="submit" class="btn btn-danger btn-xs"><i class="fas fa-times"></i> Decline</button>
+                        </form>
+                        <a href="{{ url_for('admin.view_result', result_id=result.id) }}" class="btn btn-outline btn-xs">View Details</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-check-double fa-3x"></i>
+                <p>No approved results found for the current and previous two game weeks.</p>
             </div>
             {% endif %}
         </div>

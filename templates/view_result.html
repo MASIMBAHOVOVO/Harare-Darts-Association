@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}View Scorecard{% endblock %}
+
+{% block content %}
+<section class="page-header dashboard-header">
+    <div class="container">
+        <h1 class="page-title">Scorecard Details</h1>
+        <p class="page-subtitle">Full breakdown for Result #{{ result.id }}</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="dashboard-card scorecard-card">
+            <h4>
+                <span class="team-num">{{ fixture.home_team_number }}</span> {{ home_team.name if home_team else 'Unknown' }}
+                <span class="vs-badge">vs</span>
+                <span class="team-num">{{ fixture.away_team_number or 'Bye' }}</span> {{ away_team.name if away_team else '' }}
+                {% if fixture.game_week %}<small>— Game Week {{ fixture.game_week.week_number }}</small>{% endif %}
+            </h4>
+
+            <div class="scorecard-summary" style="margin-bottom:1rem;">
+                <div class="scorecard-summary-row total-row">
+                    <span class="scorecard-label">TOTAL:</span>
+                    <span class="score-badge">{{ result.total_home }} - {{ result.total_away }}</span>
+                </div>
+                {% if result.one_eighties_scored %}
+                <div class="scorecard-summary-row"><span class="scorecard-label">180s:</span> {{ result.one_eighties_scored }}</div>
+                {% endif %}
+                {% if result.one_seventies_scored %}
+                <div class="scorecard-summary-row"><span class="scorecard-label">171s:</span> {{ result.one_seventies_scored }}</div>
+                {% endif %}
+                {% if result.highest_close_player %}
+                <div class="scorecard-summary-row"><span class="scorecard-label">Highest Closures:</span> {{ result.highest_close_player }}</div>
+                {% elif result.highest_close > 0 %}
+                <div class="scorecard-summary-row"><span class="scorecard-label">Highest Close:</span> {{ result.highest_close }}</div>
+                {% endif %}
+            </div>
+
+            {% if result.match_details %}
+            <div class="match-details-breakdown">
+                <h5 style="color: var(--accent-gold);">MATCH BREAKDOWN</h5>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>TYPE</th>
+                                <th>HOME PLAYER(S)</th>
+                                <th class="text-center">HOME SCORES</th>
+                                <th class="text-center">AWAY SCORES</th>
+                                <th>AWAY PLAYER(S)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for md in result.match_details|sort(attribute='match_num') if md.match_type == 'pair' %}
+                            <tr>
+                                <td>Double {{ md.match_num }}</td>
+                                <td>
+                                    <strong>{{ md.home_player1.name if md.home_player1 else '—' }}</strong>
+                                    {% if md.home_player2 %}<br><strong>{{ md.home_player2.name }}</strong>{% endif %}
+                                </td>
+                                <td class="text-center">{{ md.home_legs_won }}</td>
+                                <td class="text-center">{{ md.away_legs_won }}</td>
+                                <td>
+                                    <strong>{{ md.away_player1.name if md.away_player1 else '—' }}</strong>
+                                    {% if md.away_player2 %}<br><strong>{{ md.away_player2.name }}</strong>{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                            {% for md in result.match_details|sort(attribute='match_num') if md.match_type == 'single' %}
+                            <tr>
+                                <td>Single {{ md.match_num }}</td>
+                                <td><strong>{{ md.home_player1.name if md.home_player1 else '—' }}</strong></td>
+                                <td class="text-center">{{ md.home_legs_won }}</td>
+                                <td class="text-center">{{ md.away_legs_won }}</td>
+                                <td><strong>{{ md.away_player1.name if md.away_player1 else '—' }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="margin-top:1rem;">
+                <a href="{{ url_for('admin.fixture_sec_dashboard') }}" class="btn btn-outline">Back</a>
+                {% if current_user.role in ['fixture_secretary','secretary_general'] %}
+                <form method="POST" action="{{ url_for('admin.decline_result', result_id=result.id) }}" style="display:inline; margin-left:0.5rem;">
+                    <input type="hidden" name="decline_reason" value="Declined after review">
+                    <button type="submit" class="btn btn-danger">Decline & Revert</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

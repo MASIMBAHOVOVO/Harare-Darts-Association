@@ -101,48 +101,30 @@ def player_stats():
         max_gw = 34 # Fallback
 
     if stat_type == 'highest_checkout':
-        # Aggregate best checkout per player across all GWs
+        # Return every recorded highest_checkout as its own row so a player
+        # can appear multiple times if they hit multiple checkouts.
         from app import db
-        # We use outerjoin to include players without stats
+
         stats_query = db.session.query(
             Player.name,
             Team.name.label('team_name'),
-            func.coalesce(func.max(PlayerGameWeekStats.highest_checkout), 0).label('best_checkout'),
-            func.coalesce(func.sum(PlayerGameWeekStats.games_played), 0).label('total_games')
-        ).outerjoin(
+            PlayerGameWeekStats.highest_checkout
+        ).join(
             PlayerGameWeekStats, Player.id == PlayerGameWeekStats.player_id
         ).outerjoin(
             Team, Player.team_id == Team.id
-        ).group_by(
-            Player.id, Player.name, Team.name
+        ).filter(
+            PlayerGameWeekStats.highest_checkout > 0
         ).order_by(
-            func.max(PlayerGameWeekStats.highest_checkout).desc(),
-            func.sum(PlayerGameWeekStats.games_played).desc(),
+            PlayerGameWeekStats.highest_checkout.desc(),
             Player.name.asc()
         ).all()
 
-        stats = []
-        for row in stats_query:
-            # use None for players with no games so we can push them after numeric values
-            if row.total_games > 0:
-                best_co = row.best_checkout
-            else:
-                best_co = None
-            stats.append({
-                'name': row.name,
-                'team_name': row.team_name,
-                'best_checkout': best_co
-            })
-
-        # sort: have numeric values first (descending) then blanks; tie-break on name
-        def sort_key(entry):
-            # numeric entries: has_value = 0, blanks: has_value = 1
-            has_value = 0 if entry['best_checkout'] is not None else 1
-            # for numeric we want reverse sort by value; for blanks value doesn't matter
-            val = entry['best_checkout'] if entry['best_checkout'] is not None else -1
-            return (has_value, -val, entry['name'])
-
-        stats.sort(key=sort_key)
+        stats = [{
+            'name': r.name,
+            'team_name': r.team_name,
+            'best_checkout': r.highest_checkout
+        } for r in stats_query]
 
         return render_template(
             'player_stats.html',
